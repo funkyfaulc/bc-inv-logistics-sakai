@@ -58,11 +58,12 @@ export const ProductService = {
     async deleteProduct(productId: string): Promise<void> {
         try {
             const productDoc = doc(db, 'products_sk', productId);
-            await deleteDoc(productDoc);
+            await deleteDoc(productDoc); // This deletes from Firestore
+            console.log(`Deleted product with ID: ${productId}`);
         } catch (error) {
             console.error('Error deleting product:', error);
         }
-    }
+    }  
 };
 
 
