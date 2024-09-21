@@ -105,10 +105,12 @@ const Dashboard = () => {
         setLineOptions(lineOptions);
     };
 
+    /*
     useEffect(() => {
         ProductService.getProductsSmall().then((data) => setProducts(data));
     }, []);
-
+    */
+   
     useEffect(() => {
         if (layoutConfig.colorScheme === 'light') {
             applyLightTheme();

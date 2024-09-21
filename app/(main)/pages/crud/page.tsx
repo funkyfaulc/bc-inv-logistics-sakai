@@ -12,6 +12,7 @@ import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { ProductService } from '../../../../demo/service/ProductService';
 
+
 const Crud = () => {
     const emptyProduct = {
         id: '',
@@ -37,7 +38,11 @@ const Crud = () => {
 
     const productOptions = [
         { label: 'Bed Sheets', value: 'Bed Sheets' },
-        { label: 'Pillowcase', value: 'Pillowcase' }
+        { label: 'Pillowcase', value: 'Pillowcase' },
+        { label: 'Flat Sheet', value: 'Flat Sheet' },
+        { label: 'Fitted Sheet', value: 'Fitted Sheet' },
+        { label: 'Duvet Cover', value: 'Duvet Cover' },
+        { label: 'Crib Sheet', value: 'Crib Sheet' }
     ];
 
     const materialOptions = [
@@ -47,18 +52,41 @@ const Crud = () => {
 
     const colorOptionsByProduct = {
         'Bed Sheets': [
-            { label: 'Coastal Blue', value: 'CB' },
-            { label: 'Charcoal Grey', value: 'CG' },
-            { label: 'Champagne', value: 'CH' },
-            { label: 'Dune', value: 'DU' },
-            { label: 'Grey Mist', value: 'GM' },
-            { label: 'Ivory', value: 'IV' },
-            { label: 'Slate Blue', value: 'SB' },
-            { label: 'Sea Glass', value: 'SG' },
-            { label: 'Twilight Blue', value: 'TB' }
+            { label: 'Black', value: 'Black' },
+            { label: 'Coastal Blue', value: 'Coastal Blue' },
+            { label: 'Charcoal Grey', value: 'Charcoal Grey' },
+            { label: 'Champagne', value: 'Champagne' },
+            { label: 'Dune', value: 'Dune' },
+            { label: 'Grey Mist', value: 'Grey Mist' },
+            { label: 'Ivory', value: 'Ivory' },
+            { label: 'Lilac', value: 'Lilac' },
+            { label: 'Marigold', value: 'Marigold' },
+            { label: 'Merlot', value: 'Merlot' },
+            { label: 'Mocha', value: 'Mocha' },
+            { label: 'Olive', value: 'Olive' },
+            { label: 'Raisin', value: 'Raisin' },
+            { label: 'Slate Blue', value: 'Slate Blue' },
+            { label: 'Sea Glass', value: 'Sea Glass' },
+            { label: 'Twilight Blue', value: 'Twilight Blue' },
+            { label: 'White', value: 'White' }
         ],
         'Pillowcase': [
             { label: 'Black', value: 'Black' },
+            { label: 'Coastal Blue', value: 'Coastal Blue' },
+            { label: 'Charcoal Grey', value: 'Charcoal Grey' },
+            { label: 'Champagne', value: 'Champagne' },
+            { label: 'Dune', value: 'Dune' },
+            { label: 'Grey Mist', value: 'Grey Mist' },
+            { label: 'Ivory', value: 'Ivory' },
+            { label: 'Lilac', value: 'Lilac' },
+            { label: 'Marigold', value: 'Marigold' },
+            { label: 'Merlot', value: 'Merlot' },
+            { label: 'Mocha', value: 'Mocha' },
+            { label: 'Olive', value: 'Olive' },
+            { label: 'Raisin', value: 'Raisin' },
+            { label: 'Slate Blue', value: 'Slate Blue' },
+            { label: 'Sea Glass', value: 'Sea Glass' },
+            { label: 'Twilight Blue', value: 'Twilight Blue' },
             { label: 'White', value: 'White' }
         ]
     };
@@ -68,9 +96,15 @@ const Crud = () => {
             { label: 'Queen', value: 'Queen' },
             { label: 'King', value: 'King' },
             { label: 'Cal King', value: 'Cal King' },
+            { label: 'Split King', value: 'Split King' },
+            { label: 'Twin', value: 'Twin' },
+            { label: 'TwinXL', value: 'TwinXL' },
+            { label: 'Full', value: 'Full' },
+            { label: 'Split Top King', value: 'Split Top King' },
         ],
         'Pillowcase': [
             { label: 'Standard', value: 'Standard' },
+            { label: 'Queen', value: 'Queen' },
             { label: 'King', value: 'King' }
         ]
     };
@@ -93,27 +127,37 @@ const Crud = () => {
         setProductDialog(false);
     };
 
-    const saveProduct = () => {
+    const saveProduct = async () => {
         setSubmitted(true);
-
+    
         if (product.product.trim()) {
             let _products = [...products];
             let _product = { ...product };
+            
             if (product.id) {
                 const index = findIndexById(product.id);
                 _products[index] = _product;
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
+                
+                // Firestore update product
+                console.log("Updating product in Firestore: ", _product); // Log for debugging
+                await ProductService.updateProduct(product.id, _product);  // Use the ProductService.updateProduct method
             } else {
                 _product.id = createId();
                 _products.push(_product);
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Product Created', life: 3000 });
+                
+                // Firestore add product
+                console.log("Adding product to Firestore: ", _product); // Log for debugging
+                await ProductService.addProduct(_product);  // Use the ProductService.addProduct method
             }
-
+    
             setProducts(_products);
             setProductDialog(false);
             setProduct(emptyProduct);
         }
     };
+    
 
     const onProductChange = (e) => {
         const selectedProduct = e.value;
@@ -257,8 +301,8 @@ const Crud = () => {
                         <Column field="material" header="Material" sortable></Column>
                         <Column field="color" header="Color" sortable></Column>
                         <Column field="size" header="Size" sortable></Column>
-                        <Column field="asin" header="ASIN" sortable></Column>
                         <Column field="sku" header="SKU" sortable></Column>
+                        <Column field="asin" header="ASIN" sortable></Column>
                         <Column field="upc" header="UPC" sortable></Column>
                         <Column body={actionBodyTemplate} headerStyle={{ width: '8rem' }}></Column>
                     </DataTable>
