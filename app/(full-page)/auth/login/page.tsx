@@ -1,5 +1,5 @@
-/* eslint-disable @next/next/no-img-element */
-'use client';
+'use client'; // Add this at the top to mark the component as a Client Component
+
 import { useRouter } from 'next/navigation';
 import React, { useContext, useState } from 'react';
 import { Checkbox } from 'primereact/checkbox';
@@ -8,14 +8,44 @@ import { Password } from 'primereact/password';
 import { LayoutContext } from '../../../../layout/context/layoutcontext';
 import { InputText } from 'primereact/inputtext';
 import { classNames } from 'primereact/utils';
+import { auth, db } from '../../../firebase'; // Adjusted the import
+
 
 const LoginPage = () => {
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [checked, setChecked] = useState(false);
-    const { layoutConfig } = useContext(LayoutContext);
+    const [error, setError] = useState<string | null>(null); // Track errors
 
+    const { layoutConfig } = useContext(LayoutContext);
     const router = useRouter();
+
     const containerClassName = classNames('surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden', { 'p-input-filled': layoutConfig.inputStyle === 'filled' });
+
+    const handleGoogleSignIn = async () => {
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+        try {
+            const result = await auth.signInWithPopup(googleProvider);
+            const user = result.user;
+
+            if (user) {
+                const email = user.email;
+                const allowedUserRef = db.collection('allowedUsers').doc(email); // Use `db` here
+
+                const allowedUserDoc = await allowedUserRef.get();
+                if (allowedUserDoc.exists) {
+                    console.log('User is allowed:', user);
+                    router.push('/'); // Redirect to home page after successful login
+                } else {
+                    setError('Access Denied. You are not authorized to access this app.');
+                    auth.signOut(); // Sign out the unauthorized user
+                }
+            }
+        } catch (error) {
+            console.error('Sign-in error:', error);
+            setError('Error during sign-in. Please try again.');
+        }
+    };
 
     return (
         <div className={containerClassName}>
@@ -31,15 +61,17 @@ const LoginPage = () => {
                     <div className="w-full surface-card py-8 px-5 sm:px-8" style={{ borderRadius: '53px' }}>
                         <div className="text-center mb-5">
                             <img src="/demo/images/login/avatar.png" alt="Image" height="50" className="mb-3" />
-                            <div className="text-900 text-3xl font-medium mb-3">Welcome, Isabel!</div>
+                            <div className="text-900 text-3xl font-medium mb-3">Welcome!</div>
                             <span className="text-600 font-medium">Sign in to continue</span>
                         </div>
+
+                        {error && <p style={{ color: 'red' }}>{error}</p>} {/* Display error message */}
 
                         <div>
                             <label htmlFor="email1" className="block text-900 text-xl font-medium mb-2">
                                 Email
                             </label>
-                            <InputText id="email1" type="text" placeholder="Email address" className="w-full md:w-30rem mb-5" style={{ padding: '1rem' }} />
+                            <InputText id="email1" type="text" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full md:w-30rem mb-5" style={{ padding: '1rem' }} />
 
                             <label htmlFor="password1" className="block text-900 font-medium text-xl mb-2">
                                 Password
@@ -55,7 +87,8 @@ const LoginPage = () => {
                                     Forgot password?
                                 </a>
                             </div>
-                            <Button label="Sign In" className="w-full p-3 text-xl" onClick={() => router.push('/')}></Button>
+
+                            <Button label="Sign In" className="w-full p-3 text-xl" onClick={handleGoogleSignIn}></Button>
                         </div>
                     </div>
                 </div>
