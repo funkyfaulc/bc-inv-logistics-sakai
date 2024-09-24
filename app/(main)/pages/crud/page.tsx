@@ -134,25 +134,44 @@ const Crud = () => {
         setSubmitted(true);
     
         if (product.product.trim()) {
+            // Fetch all products from Firestore
+            const existingProductsSnapshot = await ProductService.getProducts(); 
+            const existingSKUs = new Set(existingProductsSnapshot.map(p => p.sku));
+            const existingASINs = new Set(existingProductsSnapshot.map(p => p.asin));
+    
+            // Check for duplicates (either by SKU or ASIN)
+            if (
+                existingSKUs.has(product.sku) && product.id !== existingProductsSnapshot.find(p => p.sku === product.sku).id ||
+                (product.asin && existingASINs.has(product.asin) && product.id !== existingProductsSnapshot.find(p => p.asin === product.asin).id)
+            ) {
+                toast.current.show({
+                    severity: 'warn', 
+                    summary: 'Duplicate Found', 
+                    detail: `Cannot Update, Duplicate Found (SKU: ${product.sku} or ASIN: ${product.asin})`, 
+                    life: 4000
+                });
+                return; // Prevent further execution if duplicate found
+            }
+    
             let _products = [...products];
             let _product = { ...product };
-            
+    
             if (product.id) {
                 const index = findIndexById(product.id);
                 _products[index] = _product;
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
-                
+    
                 // Firestore update product
-                console.log("Updating product in Firestore: ", _product); // Log for debugging
-                await ProductService.updateProduct(product.id, _product);  // Use the ProductService.updateProduct method
+                console.log("Updating product in Firestore: ", _product); 
+                await ProductService.updateProduct(product.id, _product); 
             } else {
                 _product.id = createId();
                 _products.push(_product);
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Product Created', life: 3000 });
-                
+    
                 // Firestore add product
-                console.log("Adding product to Firestore: ", _product); // Log for debugging
-                await ProductService.addProduct(_product);  // Use the ProductService.addProduct method
+                console.log("Adding product to Firestore: ", _product); 
+                await ProductService.addProduct(_product); 
             }
     
             setProducts(_products);
@@ -160,6 +179,7 @@ const Crud = () => {
             setProduct(emptyProduct);
         }
     };
+    
     
 
     const onProductChange = (e) => {
@@ -248,7 +268,11 @@ const Crud = () => {
     
 
     const editProduct = (product) => {
+        
+        // Set the product, color ,and size dropdown options based on the product type
         setProduct({ ...product });
+        setColorOptions(colorOptionsByProduct[product.product] || []);
+        setSizeOptions(sizeOptionsByProduct[product.product] || []);
         setProductDialog(true);
     };
 
@@ -277,6 +301,7 @@ const Crud = () => {
         });
     };
     
+    //Bulk Upload Products Functionality
     const bulkUploadProducts = async (products) => {
         let totalAdded = 0; // Keep track of successfully added products
         let errors = []; // Keep track of errors (e.g., missing required fields, duplicates)
@@ -284,11 +309,12 @@ const Crud = () => {
         try {
             const existingProductsSnapshot = await ProductService.getProducts(); // Fetch all products from Firestore
             const existingSKUs = new Set(existingProductsSnapshot.map(product => product.sku)); // Collect existing SKUs
+            const existingASINs = new Set(existingProductsSnapshot.map(product => product.asin)); // Collect existing ASINs
     
             for (const product of products) {
-                // Check for duplicates
-                if (existingSKUs.has(product.sku)) {
-                    errors.push(`Duplicate SKU found: ${product.sku}`);
+                // Check for duplicates (either by SKU or ASIN)
+                if (existingSKUs.has(product.sku) || (product.asin && existingASINs.has(product.asin))) {
+                    errors.push(`Duplicate found (SKU: ${product.sku || 'N/A'} or ASIN: ${product.asin || 'N/A'})`);
                     continue; // Skip this product
                 }
     
@@ -321,6 +347,7 @@ const Crud = () => {
             toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to upload products', life: 3000 });
         }
     };
+    
     
     
     const openBulkUpload = () => setBulkUploadDialog(true); // Function for opening bulk upload dialog
