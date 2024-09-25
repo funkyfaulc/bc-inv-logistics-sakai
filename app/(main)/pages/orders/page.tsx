@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 'use client';
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
@@ -8,8 +7,7 @@ import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import React, { useEffect, useRef, useState } from 'react';
-import { Calendar } from 'primereact/calendar';  // Add this import for the date picker
-import { classNames } from 'primereact/utils';
+import { Calendar } from 'primereact/calendar';
 import { OrderService } from '../../../../demo/service/OrderService';
 
 const OrderManagement = () => {
@@ -40,12 +38,10 @@ const OrderManagement = () => {
     const toast = useRef(null);
     const dt = useRef(null);
 
-    // Fetch Orders from Firestore
     useEffect(() => {
         OrderService.getOrders().then((data) => setOrders(data));
     }, []);
 
-    // Open New Order Dialog
     const openNew = () => {
         setOrder(emptyOrder);
         setSubmitted(false);
@@ -59,34 +55,30 @@ const OrderManagement = () => {
 
     const saveOrder = async () => {
         setSubmitted(true);
-    
+
         if (order.orderDate) {
             let _orders = [...orders];
             let _order = { ...order };
-    
+
             if (order.id) {
                 const index = findIndexById(order.id);
                 _orders[index] = _order;
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Order Updated', life: 3000 });
-    
-                // Firestore update order
+
                 await OrderService.updateOrder(order.id, _order);
             } else {
-                // Remove manual ID generation
-                // Firestore will handle ID generation
                 _orders.push(_order);
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Order Created', life: 3000 });
-    
-                // Firestore add order
+
                 await OrderService.addOrder(_order);
             }
-    
+
             setOrders(_orders);
             setOrderDialog(false);
             setOrder(emptyOrder);
         }
     };
-    
+
     const findIndexById = (id) => {
         let index = -1;
         for (let i = 0; i < orders.length; i++) {
@@ -98,66 +90,42 @@ const OrderManagement = () => {
         return index;
     };
 
-    const createId = () => {
-        let id = '';
-        let chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        for (let i = 0; i < 5; i++) {
-            id += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        return id;
-    };
-
-    //  Edit Single Order
     const editOrder = (order) => {
         setOrder({ ...order });
-        setOrderDialog(true);  // This opens the dialog and populates it with the selected order's data
+        setOrderDialog(true);
     };
-    
 
-    // Confirm and Delete Single Order
     const confirmDeleteOrder = (order) => {
         setOrder(order);
         setDeleteOrderDialog(true);
     };
 
     const deleteOrder = async () => {
-        try {
-            await OrderService.deleteOrder(order.id);
+        await OrderService.deleteOrder(order.id);
 
-            let _orders = orders.filter((val) => val.id !== order.id);
-            setOrders(_orders);
-            setDeleteOrderDialog(false);
-            setOrder(emptyOrder);
-            toast.current.show({ severity: 'success', summary: 'Successful', detail: '1 Order Deleted', life: 3000 });
-        } catch (error) {
-            console.error('Error deleting order:', error);
-            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete order', life: 3000 });
-        }
+        let _orders = orders.filter((val) => val.id !== order.id);
+        setOrders(_orders);
+        setDeleteOrderDialog(false);
+        setOrder(emptyOrder);
+        toast.current.show({ severity: 'success', summary: 'Successful', detail: '1 Order Deleted', life: 3000 });
     };
 
-    // Delete Selected Orders
     const deleteSelectedOrders = async () => {
-        try {
-            for (const selectedOrder of selectedOrders) {
-                await OrderService.deleteOrder(selectedOrder.id);
-            }
-
-            let _orders = orders.filter((val) => !selectedOrders.includes(val));
-            const deletedCount = selectedOrders.length;
-            setOrders(_orders);
-            setDeleteOrdersDialog(false);
-            setSelectedOrders(null);
-            toast.current.show({ severity: 'success', summary: 'Successful', detail: `${deletedCount} Orders Deleted`, life: 3000 });
-        } catch (error) {
-            console.error('Error deleting orders:', error);
-            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete orders', life: 3000 });
+        for (const selectedOrder of selectedOrders) {
+            await OrderService.deleteOrder(selectedOrder.id);
         }
+
+        let _orders = orders.filter((val) => !selectedOrders.includes(val));
+        setOrders(_orders);
+        setDeleteOrdersDialog(false);
+        setSelectedOrders(null);
+        toast.current.show({ severity: 'success', summary: 'Successful', detail: `${selectedOrders.length} Orders Deleted`, life: 3000 });
     };
 
     const onInputChange = (e, name) => {
-        const val = (e.target && e.target.value) || '';
+        const val = (e.target && e.target.value) || null;
         let _order = { ...order };
-        _order[`${name}`] = val;
+        _order[name] = val instanceof Date ? val : null;
         setOrder(_order);
     };
 
@@ -233,13 +201,14 @@ const OrderManagement = () => {
                         responsiveLayout="scroll"
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
-                        <Column field="orderDate" header="Order Date" sortable></Column>
-                        <Column field="finalCountDate" header="Final Count Date" sortable></Column>
-                        <Column field="finishManufactureDate" header="Finish Manufacture Date" sortable></Column>
-                        <Column field="leavePortDate" header="Leave Port Date" sortable></Column>
-                        <Column field="arrivePortDate" header="Arrive Port Date" sortable></Column>
-                        <Column field="deliveredToAmazonDate" header="Delivered to Amazon" sortable></Column>
-                        <Column field="availableInAmazonDate" header="Available in Amazon" sortable></Column>
+                        <Column field="orderDate" header="Order Date" sortable body={(rowData) => rowData.orderDate ? new Date(rowData.orderDate).toLocaleDateString() : ''}></Column>
+                        <Column field="finalCountDate" header="Final Count Date" sortable body={(rowData) => rowData.finalCountDate ? new Date(rowData.finalCountDate).toLocaleDateString() : ''}></Column>
+                        <Column field="finishManufactureDate" header="Finish Manufacture Date" sortable body={(rowData) => rowData.finishManufactureDate ? new Date(rowData.finishManufactureDate).toLocaleDateString() : ''}></Column>
+                        <Column field="leavePortDate" header="Leave Port Date" sortable body={(rowData) => rowData.leavePortDate ? new Date(rowData.leavePortDate).toLocaleDateString() : ''}></Column>
+                        <Column field="arrivePortDate" header="Arrive Port Date" sortable body={(rowData) => rowData.arrivePortDate ? new Date(rowData.arrivePortDate).toLocaleDateString() : ''}></Column>
+                        <Column field="deliveredToAmazonDate" header="Delivered to Amazon" sortable body={(rowData) => rowData.deliveredToAmazonDate ? new Date(rowData.deliveredToAmazonDate).toLocaleDateString() : ''}></Column>
+                        <Column field="availableInAmazonDate" header="Available in Amazon" sortable body={(rowData) => rowData.availableInAmazonDate ? new Date(rowData.availableInAmazonDate).toLocaleDateString() : ''}></Column>
+                        <Column field="coverageDate" header="Coverage Date" sortable body={(rowData) => rowData.coverageDate ? new Date(rowData.coverageDate).toLocaleDateString() : ''}></Column>
                         <Column field="contract" header="Contract" sortable></Column>
                         <Column field="deposit" header="Deposit" sortable></Column>
                         <Column body={actionBodyTemplate} headerStyle={{ width: '8rem' }}></Column>
@@ -250,9 +219,7 @@ const OrderManagement = () => {
                             <label htmlFor="orderId">Order ID</label>
                             <InputText id="orderId" value={order.orderId} onChange={(e) => onInputChange(e, 'orderId')} 
                             disabled={!!order.id}  // Disable if editing an existing order
-                            className={classNames({ 'p-invalid': submitted && !order.orderId })}
                             />
-                            {submitted && !order.orderId && <small className="p-invalid">Order ID is required.</small>}
                         </div>
                         
                         <div className="field">
@@ -316,7 +283,7 @@ const OrderManagement = () => {
                             <i className="pi pi-exclamation-triangle mr-3" style={{ fontSize: '2rem' }} />
                             {order && (
                                 <span>
-                                    Are you sure you want to delete <b>{order.name}</b>?
+                                    Are you sure you want to delete <b>{order.orderId}</b>?
                                 </span>
                             )}
                         </div>

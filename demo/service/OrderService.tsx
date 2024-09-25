@@ -31,7 +31,7 @@ export const OrderService = {
             const data = doc.data();
             return {
                 ...data,
-                id: doc.id,
+                id: doc.id, //Only for reference
                 orderDate: data.orderDate ? data.orderDate.toDate() : null,
                 finalCountDate: data.finalCountDate ? data.finalCountDate.toDate() : null,
                 finishManufactureDate: data.finishManufactureDate ? data.finishManufactureDate.toDate() : null,
