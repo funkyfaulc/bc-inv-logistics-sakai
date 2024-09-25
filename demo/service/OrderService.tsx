@@ -31,7 +31,7 @@ export const OrderService = {
             const data = doc.data();
             return {
                 ...data,
-                id: doc.id, //Only for reference
+                id: doc.id, // Only for frontend reference, not persisted
                 orderDate: data.orderDate ? data.orderDate.toDate() : null,
                 finalCountDate: data.finalCountDate ? data.finalCountDate.toDate() : null,
                 finishManufactureDate: data.finishManufactureDate ? data.finishManufactureDate.toDate() : null,
@@ -57,8 +57,11 @@ export const OrderService = {
                 throw new Error(`Order with orderId: ${order.orderId} already exists.`);
             }
 
+            // Remove the 'id' field from the order object before adding to Firestore
+            const { id, ...orderDataWithoutId } = order;
+            
             await addDoc(orderCollection, {
-                ...order,
+                ...orderDataWithoutId,
                 orderId: order.orderId,
                 orderDate: order.orderDate ? Timestamp.fromDate(order.orderDate) : null,
                 finalCountDate: order.finalCountDate ? Timestamp.fromDate(order.finalCountDate) : null,
@@ -68,6 +71,9 @@ export const OrderService = {
                 deliveredToAmazonDate: order.deliveredToAmazonDate ? Timestamp.fromDate(order.deliveredToAmazonDate) : null,
                 availableInAmazonDate: order.availableInAmazonDate ? Timestamp.fromDate(order.availableInAmazonDate) : null,
                 coverageDate: order.coverageDate ? Timestamp.fromDate(order.coverageDate) : null,
+                contract: order.contract || '',
+                deposit: order.deposit || 0,
+                totalCost: order.totalCost || 0,
                 created_at: serverTimestamp(),
                 updated_at: serverTimestamp()
             });
@@ -81,8 +87,13 @@ export const OrderService = {
     async updateOrder(orderId: string, updatedOrder: Order): Promise<void> {
         try {
             const orderDoc = doc(db, 'orders', orderId);
+
+            // Remove the 'id' field from the updated order before sending to Firestore
+            const { id, ...updatedOrderWithoutId } = updatedOrder;
+
             await updateDoc(orderDoc, {
-                ...updatedOrder,
+                ...updatedOrderWithoutId,
+                orderId: updatedOrder.orderId,
                 orderDate: updatedOrder.orderDate ? Timestamp.fromDate(updatedOrder.orderDate) : null,
                 finalCountDate: updatedOrder.finalCountDate ? Timestamp.fromDate(updatedOrder.finalCountDate) : null,
                 finishManufactureDate: updatedOrder.finishManufactureDate ? Timestamp.fromDate(updatedOrder.finishManufactureDate) : null,
@@ -91,6 +102,9 @@ export const OrderService = {
                 deliveredToAmazonDate: updatedOrder.deliveredToAmazonDate ? Timestamp.fromDate(updatedOrder.deliveredToAmazonDate) : null,
                 availableInAmazonDate: updatedOrder.availableInAmazonDate ? Timestamp.fromDate(updatedOrder.availableInAmazonDate) : null,
                 coverageDate: updatedOrder.coverageDate ? Timestamp.fromDate(updatedOrder.coverageDate) : null,
+                contract: updatedOrder.contract || '',
+                deposit: updatedOrder.deposit || 0,
+                totalCost: updatedOrder.totalCost || 0,
                 updated_at: serverTimestamp()
             });
             console.log("Order updated successfully!");
