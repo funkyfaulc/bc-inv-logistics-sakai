@@ -5,7 +5,7 @@ import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
 import { OrderService } from '@/demo/service/OrderService';
 import { Timeline } from 'primereact/timeline';
-import OrderEditModal from '@/app/(main)/pages/orders/modal/OrderEditModal';
+import OrderEditModal from '@/app/(main)/orders/modal/OrderEditModal';
 
 interface Order {
     id?: string;

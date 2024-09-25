@@ -87,12 +87,12 @@ const AppMenu = () => {
                 {
                     label: 'Products',
                     icon: 'pi pi-fw pi-box',
-                    to: '/pages/products'
+                    to: '/products'
                 },
                 {
                     label: 'Orders',
                     icon: 'pi pi-fw pi-truck',
-                    to: '/pages/orders'
+                    to: '/orders'
                 },
                 {
                     label: 'Timeline',
