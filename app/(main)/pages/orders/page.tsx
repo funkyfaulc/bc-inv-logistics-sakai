@@ -10,6 +10,8 @@ import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { OrderService } from '../../../../demo/service/OrderService';
+import { useRouter } from 'next/navigation';  // Add useRouter for navigation
+
 
 const OrderManagement = () => {
     const emptyOrder = {
@@ -38,6 +40,7 @@ const OrderManagement = () => {
 
     const toast = useRef(null);
     const dt = useRef(null);
+    const router = useRouter();
 
     useEffect(() => {
         OrderService.getOrders().then((data) => setOrders(data));
@@ -164,6 +167,7 @@ const OrderManagement = () => {
         return (
             <React.Fragment>
                 <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => editOrder(rowData)} />
+                <Button icon="pi pi-eye" className="p-button-rounded p-button-info mr-2" onClick={() => router.push(`/orders/${rowData.id}`)} />
                 <Button icon="pi pi-trash" className="p-button-rounded p-button-warning" onClick={() => confirmDeleteOrder(rowData)} />
             </React.Fragment>
         );
