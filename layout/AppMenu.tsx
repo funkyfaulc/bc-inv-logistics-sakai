@@ -83,7 +83,7 @@ const AppMenu = () => {
                 },
                 {
                     label: 'Products',
-                    icon: 'pi pi-fw pi-pencil',
+                    icon: 'pi pi-fw pi-box',
                     to: '/pages/products'
                 },
                 {
