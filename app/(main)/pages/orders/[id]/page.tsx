@@ -1,17 +1,35 @@
 'use client';
-import { useRouter } from 'next/router';
+import { useParams } from 'next/navigation';  // Use useParams for dynamic route param
 import { useEffect, useState } from 'react';
 import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
-import { OrderService } from '../../../../demo/service/OrderService';
+import { OrderService } from '@/demo/service/OrderService';
 import { Timeline } from 'primereact/timeline';
+import OrderEditModal from '@/app/(main)/pages/orders/modal/OrderEditModal';
+
+interface Order {
+    id?: string;
+    orderId: string;
+    orderDate: Date | null;
+    finalCountDate: Date | null;
+    finishManufactureDate: Date | null;
+    leavePortDate: Date | null;
+    arrivePortDate: Date | null;
+    deliveredToAmazonDate: Date | null;
+    availableInAmazonDate: Date | null;
+    coverageDate: Date | null;
+    contract?: string;
+    deposit?: number;
+    totalCost?: number;
+}
+
 
 const OrderDetails = () => {
-    const router = useRouter();
-    const { id } = router.query;  // Get the Order ID from URL parameters
-
-    const [order, setOrder] = useState(null);
+    const { id } = useParams();  // Use useParams to get the dynamic route param
+    const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
+    const [editDialogVisible, setEditDialogVisible] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -22,26 +40,34 @@ const OrderDetails = () => {
         }
     }, [id]);
 
-    if (loading) {
-        return <p>Loading Order Details...</p>;
-    }
+    const openEditModal = () => {
+        setEditDialogVisible(true); // Open the modal
+    };
 
-    if (!order) {
-        return <p>Order not found</p>;
-    }
+    const saveOrder = async () => {
+        setSubmitted(true);
+        if (order && order.orderId) {
+            await OrderService.updateOrder(order.id as string, order);
+            setEditDialogVisible(false);  // Close modal after saving
+            setSubmitted(false);
+        }
+    };
+
+    if (loading) return <p>Loading Order Details...</p>;
+    if (!order) return <p>Order not found</p>;
 
     const events = [
-        { status: 'Order Placed', date: order.orderDate, icon: 'pi pi-shopping-cart' },
-        { status: 'Final Count', date: order.finalCountDate, icon: 'pi pi-check' },
-        { status: 'Manufacturing Complete', date: order.finishManufactureDate, icon: 'pi pi-cog' },
-        { status: 'Left Port', date: order.leavePortDate, icon: 'pi pi-send' },
-        { status: 'Arrived at Destination', date: order.arrivePortDate, icon: 'pi pi-map-marker' },
-        { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate, icon: 'pi pi-box' },
-        { status: 'Available in Amazon', date: order.availableInAmazonDate, icon: 'pi pi-check-circle' },
-        { status: 'Coverage End', date: order.coverageDate, icon: 'pi pi-calendar-times' },
+        { status: 'Order Placed', date: order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A', icon: 'pi pi-shopping-cart' },
+        { status: 'Final Count', date: order.finalCountDate ? new Date(order.finalCountDate).toLocaleDateString() : 'N/A', icon: 'pi pi-check' },
+        { status: 'Manufacturing Complete', date: order.finishManufactureDate ? new Date(order.finishManufactureDate).toLocaleDateString() : 'N/A', icon: 'pi pi-cog' },
+        { status: 'Left Port', date: order.leavePortDate ? new Date(order.leavePortDate).toLocaleDateString() : 'N/A', icon: 'pi pi-send' },
+        { status: 'Arrived at Destination', date: order.arrivePortDate ? new Date(order.arrivePortDate).toLocaleDateString() : 'N/A', icon: 'pi pi-map-marker' },
+        { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate ? new Date(order.deliveredToAmazonDate).toLocaleDateString() : 'N/A', icon: 'pi pi-box' },
+        { status: 'Available in Amazon', date: order.availableInAmazonDate ? new Date(order.availableInAmazonDate).toLocaleDateString() : 'N/A', icon: 'pi pi-check-circle' },
+        { status: 'Coverage End', date: order.coverageDate ? new Date(order.coverageDate).toLocaleDateString() : 'N/A', icon: 'pi pi-calendar-times' },
     ];
 
-    const filteredEvents = events.filter(event => event.date);
+    const filteredEvents = events.filter(event => event.date !== 'N/A');
 
     return (
         <div className="grid order-details-page">
@@ -52,7 +78,7 @@ const OrderDetails = () => {
                     <p>Total Cost: ${order.totalCost}</p>
                     <p>Deposit: ${order.deposit}</p>
                     {/* Add more fields as needed */}
-                    <Button label="Edit Order" icon="pi pi-pencil" onClick={() => router.push(`/orders/edit/${order.id}`)} />
+                    <Button label="Edit Order" icon="pi pi-pencil" onClick={openEditModal} />
                 </Card>
             </div>
 
@@ -63,9 +89,17 @@ const OrderDetails = () => {
                 </Card>
             </div>
 
-            {/* Placeholder for future sections */}
-            {/* Product Details */}
-            {/* Financial Details */}
+            {/* Include the modal for editing the order */}
+            {order && (
+                <OrderEditModal
+                    order={order}
+                    setOrder={setOrder}
+                    visible={editDialogVisible}
+                    onHide={() => setEditDialogVisible(false)}
+                    onSave={saveOrder}
+                    submitted={submitted}
+                />
+            )}
         </div>
     );
 };

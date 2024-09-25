@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp, getDoc } from 'firebase/firestore';
 import { db } from '../../app/firebase';  // Adjust this path to your Firebase config
 
 // Define the order interface
@@ -122,5 +122,40 @@ export const OrderService = {
         } catch (error) {
             console.error('Error deleting order:', error);
         }
+    },
+
+    // Get an order by ID
+    async getOrderById(orderId: string): Promise<Order | null> {
+        try {
+            const orderDoc = doc(db, 'orders', orderId);
+            const docSnap = await getDoc(orderDoc);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                return {
+                    ...data,
+                    id: docSnap.id,
+                    orderDate: data.orderDate ? data.orderDate.toDate() : null,
+                    finalCountDate: data.finalCountDate ? data.finalCountDate.toDate() : null,
+                    finishManufactureDate: data.finishManufactureDate ? data.finishManufactureDate.toDate() : null,
+                    leavePortDate: data.leavePortDate ? data.leavePortDate.toDate() : null,
+                    arrivePortDate: data.arrivePortDate ? data.arrivePortDate.toDate() : null,
+                    deliveredToAmazonDate: data.deliveredToAmazonDate ? data.deliveredToAmazonDate.toDate() : null,
+                    availableInAmazonDate: data.availableInAmazonDate ? data.availableInAmazonDate.toDate() : null,
+                    coverageDate: data.coverageDate ? data.coverageDate.toDate() : null
+                };
+            } else {
+                return null;
+            }
+        } catch (error) {
+            console.error('Error fetching order:', error);
+            return null;
+        }
     }
+
+
+
 };
+
+
+
+
