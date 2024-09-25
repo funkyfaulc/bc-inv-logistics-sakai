@@ -56,29 +56,26 @@ const OrderManagement = () => {
 
     const saveOrder = async () => {
         setSubmitted(true);
-   
-        // Log the order object before validation
-        console.log("Order before saving:", order);
 
         if (order.orderId && order.orderDate) {
             let _orders = [...orders];
             let _order = { ...order };
-    
+
             if (order.id) {
                 const index = findIndexById(order.id);
                 _orders[index] = _order;
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Order Updated', life: 3000 });
-    
+
                 await OrderService.updateOrder(order.id, _order);
             } else {
                 // Ensure orderId is passed explicitly here
                 _order.orderId = order.orderId;
                 _orders.push(_order);
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Order Created', life: 3000 });
-    
+
                 await OrderService.addOrder(_order);
             }
-    
+
             setOrders(_orders);
             setOrderDialog(false);
             setOrder(emptyOrder);
@@ -133,16 +130,17 @@ const OrderManagement = () => {
     const onInputChange = (e, name) => {
         const val = e.target && e.target.value;
         let _order = { ...order };
-    
+
         // Only check for Date instance if the field is related to dates
         if (['orderDate', 'finalCountDate', 'finishManufactureDate', 'leavePortDate', 'arrivePortDate', 'deliveredToAmazonDate', 'availableInAmazonDate', 'coverageDate'].includes(name)) {
             _order[name] = val instanceof Date ? val : null; // Handle dates
         } else {
             _order[name] = val; // Direct assignment for non-date fields like orderId
         }
-    
+
         setOrder(_order);
     };
+
     const leftToolbarTemplate = () => {
         return (
             <React.Fragment>
@@ -232,14 +230,13 @@ const OrderManagement = () => {
                     <Dialog visible={orderDialog} style={{ width: '450px' }} header="Order Details" modal className="p-fluid" footer={orderDialogFooter} onHide={hideDialog}>
                         <div className="field">
                             <label htmlFor="orderId">Order ID</label>
-                            <InputText id="orderId" value={order.orderId} onChange={(e) => onInputChange(e, 'orderId')} 
+                            <InputText id="orderId" value={order.orderId} onChange={(e) => onInputChange(e, 'orderId')}
                                 className={classNames({ 'p-invalid': submitted && !order.orderId })}  // Validation check
                                 disabled={!!order.id}  // Disable if editing an existing order
                             />
                             {submitted && !order.orderId && <small className="p-invalid">Order ID is required.</small>}
-
                         </div>
-                        
+
                         <div className="field">
                             <label htmlFor="orderDate">Order Date</label>
                             <Calendar id="orderDate" value={order.orderDate} onChange={(e) => onInputChange(e, 'orderDate')} showIcon />
