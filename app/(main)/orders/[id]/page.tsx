@@ -1,5 +1,5 @@
 'use client';
-import { useParams } from 'next/navigation';  // Use useParams for dynamic route param
+import { useParams, useRouter } from 'next/navigation';  
 import { useEffect, useState } from 'react';
 import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
@@ -23,9 +23,9 @@ interface Order {
     totalCost?: number;
 }
 
-
 const OrderDetails = () => {
-    const { id } = useParams();  // Use useParams to get the dynamic route param
+    const router = useRouter();
+    const { id } = useParams();
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
     const [editDialogVisible, setEditDialogVisible] = useState(false);
@@ -41,14 +41,14 @@ const OrderDetails = () => {
     }, [id]);
 
     const openEditModal = () => {
-        setEditDialogVisible(true); // Open the modal
+        setEditDialogVisible(true);
     };
 
     const saveOrder = async () => {
         setSubmitted(true);
         if (order && order.orderId) {
             await OrderService.updateOrder(order.id as string, order);
-            setEditDialogVisible(false);  // Close modal after saving
+            setEditDialogVisible(false);
             setSubmitted(false);
         }
     };
@@ -56,18 +56,20 @@ const OrderDetails = () => {
     if (loading) return <p>Loading Order Details...</p>;
     if (!order) return <p>Order not found</p>;
 
+    // Mapping the timeline events with dates and appropriate icons
     const events = [
-        { status: 'Order Placed', date: order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A', icon: 'pi pi-shopping-cart' },
-        { status: 'Final Count', date: order.finalCountDate ? new Date(order.finalCountDate).toLocaleDateString() : 'N/A', icon: 'pi pi-check' },
-        { status: 'Manufacturing Complete', date: order.finishManufactureDate ? new Date(order.finishManufactureDate).toLocaleDateString() : 'N/A', icon: 'pi pi-cog' },
-        { status: 'Left Port', date: order.leavePortDate ? new Date(order.leavePortDate).toLocaleDateString() : 'N/A', icon: 'pi pi-send' },
-        { status: 'Arrived at Destination', date: order.arrivePortDate ? new Date(order.arrivePortDate).toLocaleDateString() : 'N/A', icon: 'pi pi-map-marker' },
-        { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate ? new Date(order.deliveredToAmazonDate).toLocaleDateString() : 'N/A', icon: 'pi pi-box' },
-        { status: 'Available in Amazon', date: order.availableInAmazonDate ? new Date(order.availableInAmazonDate).toLocaleDateString() : 'N/A', icon: 'pi pi-check-circle' },
-        { status: 'Coverage End', date: order.coverageDate ? new Date(order.coverageDate).toLocaleDateString() : 'N/A', icon: 'pi pi-calendar-times' },
+        { status: 'Order Placed', date: order.orderDate, icon: 'pi pi-shopping-cart', color: '#007bff' },
+        { status: 'Final Count', date: order.finalCountDate, icon: 'pi pi-check', color: '#28a745' },
+        { status: 'Manufacturing Complete', date: order.finishManufactureDate, icon: 'pi pi-cog', color: '#17a2b8' },
+        { status: 'Left Port', date: order.leavePortDate, icon: 'pi pi-send', color: '#ffc107' },
+        { status: 'Arrived at Destination', date: order.arrivePortDate, icon: 'pi pi-map-marker', color: '#dc3545' },
+        { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate, icon: 'pi pi-box', color: '#6f42c1' },
+        { status: 'Available in Amazon', date: order.availableInAmazonDate, icon: 'pi pi-check-circle', color: '#20c997' },
+        { status: 'Coverage End', date: order.coverageDate, icon: 'pi pi-calendar-times', color: '#343a40' },
     ];
 
-    const filteredEvents = events.filter(event => event.date !== 'N/A');
+    // Only show events that have a valid date
+    const filteredEvents = events.filter(event => event.date);
 
     return (
         <div className="grid order-details-page">
@@ -77,7 +79,6 @@ const OrderDetails = () => {
                     <p>Order Date: {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A'}</p>
                     <p>Total Cost: ${order.totalCost}</p>
                     <p>Deposit: ${order.deposit}</p>
-                    {/* Add more fields as needed */}
                     <Button label="Edit Order" icon="pi pi-pencil" onClick={openEditModal} />
                 </Card>
             </div>
@@ -85,21 +86,34 @@ const OrderDetails = () => {
             {/* Order Timeline Section */}
             <div className="col-12">
                 <Card title="Order Timeline">
-                    <Timeline value={filteredEvents} align="alternate" className="customized-timeline" />
+                    <Timeline 
+                        value={filteredEvents} 
+                        align="alternate" 
+                        className="customized-timeline"
+                        marker={(item) => (
+                            <i 
+                                className={item.icon} 
+                                style={{ fontSize: '1.5em', color: item.color }} 
+                            ></i>
+                        )}
+                        content={(item) => (
+                            <p>
+                                <strong>{item.status}</strong><br />
+                                {item.date ? new Date(item.date).toLocaleDateString() : 'N/A'}
+                            </p>
+                        )}
+                    />
                 </Card>
             </div>
 
-            {/* Include the modal for editing the order */}
-            {order && (
-                <OrderEditModal
-                    order={order}
-                    setOrder={setOrder}
-                    visible={editDialogVisible}
-                    onHide={() => setEditDialogVisible(false)}
-                    onSave={saveOrder}
-                    submitted={submitted}
-                />
-            )}
+            <OrderEditModal
+                order={order}
+                setOrder={setOrder}
+                visible={editDialogVisible}
+                onHide={() => setEditDialogVisible(false)}
+                onSave={saveOrder}
+                submitted={submitted}
+            />
         </div>
     );
 };
