@@ -82,9 +82,9 @@ const AppMenu = () => {
                     ]
                 },
                 {
-                    label: 'Crud',
+                    label: 'Products',
                     icon: 'pi pi-fw pi-pencil',
-                    to: '/pages/crud'
+                    to: '/pages/products'
                 },
                 {
                     label: 'Orders',
