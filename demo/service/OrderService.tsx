@@ -59,6 +59,7 @@ export const OrderService = {
 
             await addDoc(orderCollection, {
                 ...order,
+                orderId: order.orderId,
                 orderDate: order.orderDate ? Timestamp.fromDate(order.orderDate) : null,
                 finalCountDate: order.finalCountDate ? Timestamp.fromDate(order.finalCountDate) : null,
                 finishManufactureDate: order.finishManufactureDate ? Timestamp.fromDate(order.finishManufactureDate) : null,

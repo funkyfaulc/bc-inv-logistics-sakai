@@ -6,6 +6,7 @@ import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
+import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { OrderService } from '../../../../demo/service/OrderService';
@@ -55,27 +56,34 @@ const OrderManagement = () => {
 
     const saveOrder = async () => {
         setSubmitted(true);
+   
+        // Log the order object before validation
+        console.log("Order before saving:", order);
 
-        if (order.orderDate) {
+        if (order.orderId && order.orderDate) {
             let _orders = [...orders];
             let _order = { ...order };
-
+    
             if (order.id) {
                 const index = findIndexById(order.id);
                 _orders[index] = _order;
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Order Updated', life: 3000 });
-
+    
                 await OrderService.updateOrder(order.id, _order);
             } else {
+                // Ensure orderId is passed explicitly here
+                _order.orderId = order.orderId;
                 _orders.push(_order);
                 toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Order Created', life: 3000 });
-
+    
                 await OrderService.addOrder(_order);
             }
-
+    
             setOrders(_orders);
             setOrderDialog(false);
             setOrder(emptyOrder);
+        } else {
+            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Order ID and Order Date are required', life: 3000 });
         }
     };
 
@@ -123,12 +131,18 @@ const OrderManagement = () => {
     };
 
     const onInputChange = (e, name) => {
-        const val = (e.target && e.target.value) || null;
+        const val = e.target && e.target.value;
         let _order = { ...order };
-        _order[name] = val instanceof Date ? val : null;
+    
+        // Only check for Date instance if the field is related to dates
+        if (['orderDate', 'finalCountDate', 'finishManufactureDate', 'leavePortDate', 'arrivePortDate', 'deliveredToAmazonDate', 'availableInAmazonDate', 'coverageDate'].includes(name)) {
+            _order[name] = val instanceof Date ? val : null; // Handle dates
+        } else {
+            _order[name] = val; // Direct assignment for non-date fields like orderId
+        }
+    
         setOrder(_order);
     };
-
     const leftToolbarTemplate = () => {
         return (
             <React.Fragment>
@@ -201,6 +215,7 @@ const OrderManagement = () => {
                         responsiveLayout="scroll"
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
+                        <Column field="orderId" header="Order ID" sortable></Column>
                         <Column field="orderDate" header="Order Date" sortable body={(rowData) => rowData.orderDate ? new Date(rowData.orderDate).toLocaleDateString() : ''}></Column>
                         <Column field="finalCountDate" header="Final Count Date" sortable body={(rowData) => rowData.finalCountDate ? new Date(rowData.finalCountDate).toLocaleDateString() : ''}></Column>
                         <Column field="finishManufactureDate" header="Finish Manufacture Date" sortable body={(rowData) => rowData.finishManufactureDate ? new Date(rowData.finishManufactureDate).toLocaleDateString() : ''}></Column>
@@ -218,8 +233,11 @@ const OrderManagement = () => {
                         <div className="field">
                             <label htmlFor="orderId">Order ID</label>
                             <InputText id="orderId" value={order.orderId} onChange={(e) => onInputChange(e, 'orderId')} 
-                            disabled={!!order.id}  // Disable if editing an existing order
+                                className={classNames({ 'p-invalid': submitted && !order.orderId })}  // Validation check
+                                disabled={!!order.id}  // Disable if editing an existing order
                             />
+                            {submitted && !order.orderId && <small className="p-invalid">Order ID is required.</small>}
+
                         </div>
                         
                         <div className="field">
