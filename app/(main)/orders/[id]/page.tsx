@@ -1,11 +1,11 @@
 'use client';
-import { useParams, useRouter } from 'next/navigation';  
+import { useParams } from 'next/navigation';  
 import { useEffect, useState } from 'react';
 import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
 import { OrderService } from '@/demo/service/OrderService';
 import { Timeline } from 'primereact/timeline';
-import OrderEditModal from '@/app/(main)/orders/modal/OrderEditModal';
+import OrderEditModal from '@/app/(main)/orders/modal/OrderEditModal';  // Ensure the path is correct
 
 interface Order {
     id?: string;
@@ -23,12 +23,19 @@ interface Order {
     totalCost?: number;
 }
 
+interface EventItem {
+    status: string;
+    date: Date | null;
+    icon: string;
+    color?: string;
+    today?: boolean;
+}
+
 const OrderDetails = () => {
-    const router = useRouter();
     const { id } = useParams();
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
-    const [editDialogVisible, setEditDialogVisible] = useState(false);
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);  // Control modal visibility
     const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
@@ -41,14 +48,18 @@ const OrderDetails = () => {
     }, [id]);
 
     const openEditModal = () => {
-        setEditDialogVisible(true);
+        setIsEditModalVisible(true);  // Show the modal
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalVisible(false);  // Hide the modal
     };
 
     const saveOrder = async () => {
         setSubmitted(true);
         if (order && order.orderId) {
             await OrderService.updateOrder(order.id as string, order);
-            setEditDialogVisible(false);
+            setIsEditModalVisible(false);
             setSubmitted(false);
         }
     };
@@ -56,20 +67,24 @@ const OrderDetails = () => {
     if (loading) return <p>Loading Order Details...</p>;
     if (!order) return <p>Order not found</p>;
 
-    // Mapping the timeline events with dates and appropriate icons
-    const events = [
+    // Define the timeline events
+    const events: EventItem[] = [
         { status: 'Order Placed', date: order.orderDate, icon: 'pi pi-shopping-cart', color: '#007bff' },
         { status: 'Final Count', date: order.finalCountDate, icon: 'pi pi-check', color: '#28a745' },
-        { status: 'Manufacturing Complete', date: order.finishManufactureDate, icon: 'pi pi-cog', color: '#17a2b8' },
-        { status: 'Left Port', date: order.leavePortDate, icon: 'pi pi-send', color: '#ffc107' },
-        { status: 'Arrived at Destination', date: order.arrivePortDate, icon: 'pi pi-map-marker', color: '#dc3545' },
-        { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate, icon: 'pi pi-box', color: '#6f42c1' },
-        { status: 'Available in Amazon', date: order.availableInAmazonDate, icon: 'pi pi-check-circle', color: '#20c997' },
-        { status: 'Coverage End', date: order.coverageDate, icon: 'pi pi-calendar-times', color: '#343a40' },
+        { status: 'Manufacturing Complete', date: order.finishManufactureDate, icon: 'pi pi-cog', color: '#ffc107' },
+        { status: 'Left Port', date: order.leavePortDate, icon: 'pi pi-send', color: '#17a2b8' },
+        { status: 'Arrived at Destination', date: order.arrivePortDate, icon: 'pi pi-map-marker', color: '#ff5733' },
+        { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate, icon: 'pi pi-box', color: '#6610f2' },
+        { status: 'Available in Amazon', date: order.availableInAmazonDate, icon: 'pi pi-check-circle', color: '#28a745' },
+        { status: 'Coverage End', date: order.coverageDate, icon: 'pi pi-calendar-times', color: '#dc3545' },
     ];
 
-    // Only show events that have a valid date
-    const filteredEvents = events.filter(event => event.date);
+    const today = new Date();
+    const todayMarker = { status: 'Today', date: today.toLocaleDateString(), icon: 'pi pi-calendar', color: 'red', today: true };
+
+    const filteredEvents = [...events.filter(event => event.date !== 'N/A'), todayMarker].sort(
+        (a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
+    );
 
     return (
         <div className="grid order-details-page">
@@ -106,11 +121,12 @@ const OrderDetails = () => {
                 </Card>
             </div>
 
+            {/* Order Edit Modal */}
             <OrderEditModal
                 order={order}
                 setOrder={setOrder}
-                visible={editDialogVisible}
-                onHide={() => setEditDialogVisible(false)}
+                visible={isEditModalVisible}
+                onHide={closeEditModal}
                 onSave={saveOrder}
                 submitted={submitted}
             />

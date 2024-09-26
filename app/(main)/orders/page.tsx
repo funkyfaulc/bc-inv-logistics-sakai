@@ -226,9 +226,8 @@ const OrderManagement = () => {
                         <Column field="deliveredToAmazonDate" header="Delivered to Amazon" sortable body={(rowData) => rowData.deliveredToAmazonDate ? new Date(rowData.deliveredToAmazonDate).toLocaleDateString() : ''}></Column>
                         <Column field="availableInAmazonDate" header="Available in Amazon" sortable body={(rowData) => rowData.availableInAmazonDate ? new Date(rowData.availableInAmazonDate).toLocaleDateString() : ''}></Column>
                         <Column field="coverageDate" header="Coverage Date" sortable body={(rowData) => rowData.coverageDate ? new Date(rowData.coverageDate).toLocaleDateString() : ''}></Column>
-                        <Column field="contract" header="Contract" sortable></Column>
-                        <Column field="deposit" header="Deposit" sortable></Column>
-                        <Column body={actionBodyTemplate} headerStyle={{ width: '8rem' }}></Column>
+                        <Column field="contract" header="Contract" sortable></Column>        
+                        <Column field="deposit" header="Deposit" sortable body={(rowData) => rowData.deposit ? `$${rowData.deposit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}` : '$0.00'}></Column>                        <Column body={actionBodyTemplate} headerStyle={{ width: '8rem' }}></Column>
                     </DataTable>
 
                     <Dialog visible={orderDialog} style={{ width: '450px' }} header="Order Details" modal className="p-fluid" footer={orderDialogFooter} onHide={hideDialog}>
