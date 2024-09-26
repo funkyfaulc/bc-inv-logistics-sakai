@@ -141,7 +141,8 @@ export const OrderService = {
                     arrivePortDate: data.arrivePortDate ? data.arrivePortDate.toDate() : null,
                     deliveredToAmazonDate: data.deliveredToAmazonDate ? data.deliveredToAmazonDate.toDate() : null,
                     availableInAmazonDate: data.availableInAmazonDate ? data.availableInAmazonDate.toDate() : null,
-                    coverageDate: data.coverageDate ? data.coverageDate.toDate() : null
+                    coverageDate: data.coverageDate ? data.coverageDate.toDate() : null,
+                    shipments: data.shipments || [] //Ensure shipments is an array
                 };
             } else {
                 return null;

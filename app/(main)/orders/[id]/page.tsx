@@ -5,6 +5,8 @@ import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
 import { OrderService } from '@/demo/service/OrderService';
 import { Timeline } from 'primereact/timeline';
+import { Dialog } from 'primereact/dialog';
+import { InputText } from 'primereact/inputtext'; //for shipment dialog input fields
 import OrderEditModal from '@/app/(main)/orders/modal/OrderEditModal';  // Ensure the path is correct
 
 interface Order {
@@ -21,6 +23,20 @@ interface Order {
     contract?: string;
     deposit?: number;
     totalCost?: number;
+    shipments? : Shipment[]; //Include shipment array
+}
+
+interface Shipment {
+    shipmentId: string;
+    destination: string;
+    cartons: number;
+    cbm: number;
+    weight: number;
+    amazonShipmentId: string;
+    amazonReference: string;
+    giHbl: string;
+    giQuote: string;
+    insurance: number;
 }
 
 interface EventItem {
@@ -36,7 +52,20 @@ const OrderDetails = () => {
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);  // Control modal visibility
+    const [isShipmentDialogVisible, setIsShipmentDialogVisible] = useState(false);  // Shipment dialog visibility
     const [submitted, setSubmitted] = useState(false);
+    const [newShipment, setNewShipment] = useState<Shipment>({
+        shipmentId: '',
+        destination: '',
+        cartons: 0,
+        cbm: 0,
+        weight: 0,
+        amazonShipmentId: '',
+        amazonReference: '',
+        giHbl: '',
+        giQuote: '',
+        insurance: 0
+    });
 
     useEffect(() => {
         if (id) {
@@ -55,6 +84,14 @@ const OrderDetails = () => {
         setIsEditModalVisible(false);  // Hide the modal
     };
 
+    const openShipmentDialog = () => {
+        setIsShipmentDialogVisible(true);  // Open shipment dialog
+    };
+
+    const closeShipmentDialog = () => {
+        setIsShipmentDialogVisible(false);  // Close shipment dialog
+    };
+
     const saveOrder = async () => {
         setSubmitted(true);
         if (order && order.orderId) {
@@ -64,8 +101,33 @@ const OrderDetails = () => {
         }
     };
 
+    const saveShipment = async () => {
+        if (order) {
+            const updatedShipments = [...(order.shipments || []), newShipment];  // Add new shipment to array
+            const updatedOrder = { ...order, shipments: updatedShipments };
+            setOrder(updatedOrder);
+
+            await OrderService.updateOrder(order.id as string, updatedOrder);  // Update Firestore
+
+            setNewShipment({
+                shipmentId: '',
+                destination: '',
+                cartons: 0,
+                cbm: 0,
+                weight: 0,
+                amazonShipmentId: '',
+                amazonReference: '',
+                giHbl: '',
+                giQuote: '',
+                insurance: 0
+            });  // Reset shipment form
+            setIsShipmentDialogVisible(false);  // Close shipment dialog
+        }
+    };
+
     if (loading) return <p>Loading Order Details...</p>;
     if (!order) return <p>Order not found</p>;
+
 
     // Define the timeline events
     const events: EventItem[] = [
@@ -94,7 +156,13 @@ const OrderDetails = () => {
                     <p>Order Date: {order.orderDate ? new Date(order.orderDate).toLocaleDateString() : 'N/A'}</p>
                     <p>Total Cost: ${order.totalCost}</p>
                     <p>Deposit: ${order.deposit}</p>
+
+                    {/* Edit Order Button */}
                     <Button label="Edit Order" icon="pi pi-pencil" onClick={openEditModal} />
+
+                    {/* Add Shipment Button */}
+                    <Button label="Add Shipment" icon="pi pi-plus" className="ml-2" onClick={openShipmentDialog} />
+
                 </Card>
             </div>
 
@@ -130,6 +198,90 @@ const OrderDetails = () => {
                 onSave={saveOrder}
                 submitted={submitted}
             />
+
+             {/* Shipment Dialog */}
+            <Dialog header="Add Shipment" visible={isShipmentDialogVisible} onHide={closeShipmentDialog}>
+                <div className="field">
+                    <label htmlFor="shipmentId">Shipment ID</label>
+                    <InputText 
+                        id="shipmentId" 
+                        value={newShipment.shipmentId} 
+                        onChange={(e) => setNewShipment({ ...newShipment, shipmentId: e.target.value })} 
+                        required 
+                    />
+                </div>
+                <div className="field">
+                    <label htmlFor="amazonShipmentId">AZ Shipment ID</label>
+                    <InputText 
+                        id="amazonShipmentId" 
+                        value={newShipment.amazonShipmentId} 
+                        onChange={(e) => setNewShipment({ ...newShipment, amazonShipmentId: e.target.value })} 
+                        required 
+                        style={{ width: '250px' }} // Adjust the width as needed
+                    />
+                </div>
+                <div className="field">
+                    <label htmlFor="amazonReference">AZ Reference #</label>
+                    <InputText 
+                        id="amazonReference" 
+                        value={newShipment.amazonReference} 
+                        onChange={(e) => setNewShipment({ ...newShipment, amazonReference: e.target.value })} 
+                        required 
+                    />
+                </div>
+                <div className="field">
+                    <label htmlFor="destination">Destination</label>
+                    <InputText 
+                        id="destination" 
+                        value={newShipment.destination} 
+                        onChange={(e) => setNewShipment({ ...newShipment, destination: e.target.value })} 
+                        required 
+                    />
+                </div>
+                <div className="field">
+                    <label htmlFor="cartons">Cartons</label>
+                    <InputText 
+                        id="cartons" 
+                        value={newShipment.cartons} 
+                        onChange={(e) => {
+                            const value = parseInt(e.target.value, 10);
+                            if (!isNaN(value)) {
+                                setNewShipment({ ...newShipment, cartons: value });
+                            }
+                        }} 
+                        required 
+                    />
+                </div>
+                <div className="field">
+                    <label htmlFor="cbm">CBM</label>
+                    <InputText 
+                        id="cbm" 
+                        value={newShipment.cbm} 
+                        onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (!isNaN(value)) {
+                                setNewShipment({ ...newShipment, cbm: value });
+                            }
+                        }} 
+                        required 
+                    />
+                </div>
+                <div className="field">
+                    <label htmlFor="weight">Weight (KG)</label>
+                    <InputText 
+                        id="weight" 
+                        value={newShipment.weight} 
+                        onChange={(e) => {
+                            const value = parseFloat(e.target.value);
+                            if (!isNaN(value)) {
+                                setNewShipment({ ...newShipment, weight: value });
+                            }
+                        }} 
+                        required 
+                    />
+                </div>
+                <Button label="Save Shipment" icon="pi pi-check" onClick={saveShipment} />
+            </Dialog>
         </div>
     );
 };
