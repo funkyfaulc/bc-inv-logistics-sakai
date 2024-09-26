@@ -10,12 +10,28 @@ import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { OrderService } from '../../../demo/service/OrderService';
-import { useRouter } from 'next/navigation';  // Add useRouter for navigation
+import { useRouter } from 'next/navigation';  
 
+interface Order {
+    id: string;
+    orderId: string;
+    orderDate: Date | null;
+    finalCountDate: Date | null;
+    finishManufactureDate: Date | null;
+    leavePortDate: Date | null;
+    arrivePortDate: Date | null;
+    deliveredToAmazonDate: Date | null;
+    availableInAmazonDate: Date | null;
+    coverageDate: Date | null;
+    contract: string;
+    deposit: number;
+    totalCost: number;
+}
 
 const OrderManagement = () => {
-    const emptyOrder = {
+    const emptyOrder: Order = {
         id: '',
+        orderId: '',
         orderDate: null,
         finalCountDate: null,
         finishManufactureDate: null,
@@ -29,21 +45,32 @@ const OrderManagement = () => {
         totalCost: 0,
     };
 
-    const [orders, setOrders] = useState(null);
+    const [orders, setOrders] = useState<Order[]>([]);  // Initialize with an empty array
     const [orderDialog, setOrderDialog] = useState(false);
     const [deleteOrderDialog, setDeleteOrderDialog] = useState(false);
     const [deleteOrdersDialog, setDeleteOrdersDialog] = useState(false);
     const [order, setOrder] = useState(emptyOrder);
-    const [selectedOrders, setSelectedOrders] = useState(null);
+    const [selectedOrders, setSelectedOrders] = useState<Order[]>([]);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState('');
 
-    const toast = useRef(null);
-    const dt = useRef(null);
+    const toast = useRef<Toast>(null);
+    const dt = useRef<DataTable>(null);
     const router = useRouter();
 
     useEffect(() => {
-        OrderService.getOrders().then((data) => setOrders(data));
+        const fetchOrders = async () => {
+            try {
+                console.log("Fetching orders...");  // Log fetching action
+                const data = await OrderService.getOrders();
+                console.log("Orders fetched:", data);  // Log the orders fetched
+                setOrders(data);
+            } catch (error) {
+                console.error("Error fetching orders:", error);  // Log errors
+            }
+        };
+    
+        fetchOrders();
     }, []);
 
     const openNew = () => {
@@ -200,16 +227,18 @@ const OrderManagement = () => {
                 <div className="card">
                     <Toast ref={toast} />
                     <Toolbar className="mb-4" left={leftToolbarTemplate}></Toolbar>
-
+            
                     <DataTable
                         ref={dt}
                         value={orders}
                         selection={selectedOrders}
-                        onSelectionChange={(e) => setSelectedOrders(e.value)}
-                        dataKey="id"
+                        onSelectionChange={(e) => {
+                            console.log("Selected orders:", e.value);  // Log selected orders
+                            setSelectedOrders(e.value);
+                        }}                        dataKey="id"
                         paginator
-                        rows={10}
-                        rowsPerPageOptions={[5, 10, 25]}
+                        rows={12}
+                        rowsPerPageOptions={[6, 12, 24]}
                         currentPageReportTemplate="Showing {first} to {last} of {totalRecords} orders"
                         globalFilter={globalFilter}
                         emptyMessage="No orders found."
@@ -217,7 +246,10 @@ const OrderManagement = () => {
                         responsiveLayout="scroll"
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
-                        <Column field="orderId" header="Order ID" sortable></Column>
+                        <Column field="orderId" header="Order ID" sortable body={(rowData) => {
+                            console.log("Rendering order:", rowData);  // Log rendering each order row
+                            return rowData.orderId;
+                        }}></Column>                        
                         <Column field="orderDate" header="Order Date" sortable body={(rowData) => rowData.orderDate ? new Date(rowData.orderDate).toLocaleDateString() : ''}></Column>
                         <Column field="finalCountDate" header="Final Count Date" sortable body={(rowData) => rowData.finalCountDate ? new Date(rowData.finalCountDate).toLocaleDateString() : ''}></Column>
                         <Column field="finishManufactureDate" header="Finish Manufacture Date" sortable body={(rowData) => rowData.finishManufactureDate ? new Date(rowData.finishManufactureDate).toLocaleDateString() : ''}></Column>
@@ -227,7 +259,8 @@ const OrderManagement = () => {
                         <Column field="availableInAmazonDate" header="Available in Amazon" sortable body={(rowData) => rowData.availableInAmazonDate ? new Date(rowData.availableInAmazonDate).toLocaleDateString() : ''}></Column>
                         <Column field="coverageDate" header="Coverage Date" sortable body={(rowData) => rowData.coverageDate ? new Date(rowData.coverageDate).toLocaleDateString() : ''}></Column>
                         <Column field="contract" header="Contract" sortable></Column>        
-                        <Column field="deposit" header="Deposit" sortable body={(rowData) => rowData.deposit ? `$${rowData.deposit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}` : '$0.00'}></Column>                        <Column body={actionBodyTemplate} headerStyle={{ width: '8rem' }}></Column>
+                        <Column field="deposit" header="Deposit" sortable></Column>
+                       {/*} <Column field="deposit" header="Deposit" sortable body={(rowData) => rowData.deposit ? `$${rowData.deposit.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}` : '$0.00'}></Column>*/}                        <Column body={actionBodyTemplate} headerStyle={{ width: '8rem' }}></Column>
                     </DataTable>
 
                     <Dialog visible={orderDialog} style={{ width: '450px' }} header="Order Details" modal className="p-fluid" footer={orderDialogFooter} onHide={hideDialog}>
