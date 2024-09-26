@@ -94,11 +94,13 @@ const AppMenu = () => {
                     icon: 'pi pi-fw pi-truck',
                     to: '/orders'
                 },
+                /*
                 {
                     label: 'Timeline',
                     icon: 'pi pi-fw pi-calendar',
                     to: '/pages/timeline'
                 },
+                */
                 /*
                 {
                     label: 'Not Found',
