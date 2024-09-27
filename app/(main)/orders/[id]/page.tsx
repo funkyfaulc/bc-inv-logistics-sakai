@@ -6,7 +6,9 @@ import { Card } from 'primereact/card';
 import { OrderService } from '@/demo/service/OrderService';
 import { Timeline } from 'primereact/timeline';
 import { Dialog } from 'primereact/dialog';
-import { InputText } from 'primereact/inputtext'; //for shipment dialog input fields
+import { InputText } from 'primereact/inputtext'; //for shipment dialog input fieldsi
+import { Accordion, AccordionTab } from 'primereact/accordion'; // Import accordion for collapsible panels
+
 import OrderEditModal from '@/app/(main)/orders/modal/OrderEditModal';  // Ensure the path is correct
 
 interface Order {
@@ -54,6 +56,8 @@ const OrderDetails = () => {
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);  // Control modal visibility
     const [isShipmentDialogVisible, setIsShipmentDialogVisible] = useState(false);  // Shipment dialog visibility
     const [submitted, setSubmitted] = useState(false);
+    const [editMode, setEditMode] = useState(false);  // Track whether we are editing
+    const [editedShipmentIndex, setEditedShipmentIndex] = useState<number | null>(null);  // Track the index of the shipment being edited
     const [newShipment, setNewShipment] = useState<Shipment>({
         shipmentId: '',
         destination: '',
@@ -84,31 +88,12 @@ const OrderDetails = () => {
         setIsEditModalVisible(false);  // Hide the modal
     };
 
-    const openShipmentDialog = () => {
-        setIsShipmentDialogVisible(true);  // Open shipment dialog
-    };
-
-    const closeShipmentDialog = () => {
-        setIsShipmentDialogVisible(false);  // Close shipment dialog
-    };
-
-    const saveOrder = async () => {
-        setSubmitted(true);
-        if (order && order.orderId) {
-            await OrderService.updateOrder(order.id as string, order);
-            setIsEditModalVisible(false);
-            setSubmitted(false);
-        }
-    };
-
-    const saveShipment = async () => {
-        if (order) {
-            const updatedShipments = [...(order.shipments || []), newShipment];  // Add new shipment to array
-            const updatedOrder = { ...order, shipments: updatedShipments };
-            setOrder(updatedOrder);
-
-            await OrderService.updateOrder(order.id as string, updatedOrder);  // Update Firestore
-
+    const openShipmentDialog = (shipment?: Shipment) => {
+        setEditMode(!!shipment); // Set edit mode if shipment exists
+        if (shipment) {
+            setNewShipment(shipment); // Pre-populate for editing
+        } else {
+            // Reset for adding a new shipment
             setNewShipment({
                 shipmentId: '',
                 destination: '',
@@ -120,8 +105,80 @@ const OrderDetails = () => {
                 giHbl: '',
                 giQuote: '',
                 insurance: 0
-            });  // Reset shipment form
+            });
+        }
+        setIsShipmentDialogVisible(true);
+    };
+
+   //Edit Shipment
+   const openEditShipment = (shipment: Shipment, index: number) => {
+    setEditMode(true);  // Set edit mode to true
+    setEditedShipmentIndex(index); //Keep track of the shipment being edited
+    setNewShipment(shipment);  // Pre-fill the dialog with the shipment details
+    setIsShipmentDialogVisible(true);  // Open the shipment dialog
+    };
+
+    const closeShipmentDialog = () => {
+        setIsShipmentDialogVisible(false);  // Close shipment dialog
+    };
+
+
+    const saveOrder = async () => {
+        setSubmitted(true);
+        if (order && order.orderId) {
+            await OrderService.updateOrder(order.id as string, order);
+            setIsEditModalVisible(false);
+            setSubmitted(false);
+        }
+    };
+
+    const saveShipment = async () => {
+        console.log("saveShipment called!"); // Add this line to verify the function is being triggered
+
+        if (order) {
+            let updatedShipments = [...(order.shipments || [])];
+
+            // Ensure that newShipment is not undefined or invalid
+            if (editMode && editedShipmentIndex !== null && editedShipmentIndex !== undefined) {
+                if (newShipment && editedShipmentIndex >= 0 && editedShipmentIndex < updatedShipments.length) {
+                    updatedShipments[editedShipmentIndex] = { ...newShipment };  // Update existing shipment
+                }
+            } else {
+                // Add new shipment only if it's valid
+                if (newShipment && newShipment.shipmentId && newShipment.amazonShipmentId) {
+                    updatedShipments = [...updatedShipments, { ...newShipment }]; // Add new shipment
+                }
+            }
+
+            const updatedOrder = { ...order, shipments: updatedShipments };
+
+            // Log new shipment data
+            console.log('New Shipment Data:', newShipment);
+
+            // Log to check if updatedOrder contains the correct shipment data
+            console.log('Updated Order with shipments:', updatedOrder);
+
+            setOrder(updatedOrder);
+
+            await OrderService.updateOrder(order.id as string, updatedOrder);  // Update Firestore
+
+            // Reset shipment and dialog state
+            setNewShipment({
+                shipmentId: '',
+                destination: '',
+                cartons: 0,
+                cbm: 0,
+                weight: 0,
+                amazonShipmentId: '',
+                amazonReference: '',
+                giHbl: '',
+                giQuote: '',
+                insurance: 0
+            });
+
             setIsShipmentDialogVisible(false);  // Close shipment dialog
+            setEditMode(false);  // Reset edit mode
+            setEditedShipmentIndex(null);   // Reset edited shipment index
         }
     };
 
@@ -165,6 +222,28 @@ const OrderDetails = () => {
 
                 </Card>
             </div>
+            
+            {/* Shipments Section */}
+            <div className="col-12">
+            {order.shipments && order.shipments.length > 0 ? (
+                <Accordion>
+                    {order.shipments.map((shipment, index) => (
+                        <AccordionTab key={index} header={`Shipment ${index + 1} - ${shipment.shipmentId}`}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <p><strong>AZ Shipment ID:</strong> {shipment.amazonShipmentId}</p>
+                            <p><strong>AZ Reference #:</strong> {shipment.amazonReference}</p>
+                            <p><strong>Left Port Date:</strong> {shipment.leavePortDate ? new Date(shipment.leavePortDate).toLocaleDateString() : 'N/A'}</p>
+                            <p><strong>Arrive at Destination:</strong> {shipment.arrivePortDate ? new Date(shipment.arrivePortDate).toLocaleDateString() : 'N/A'}</p>
+                            <Button label="Edit Shipment" icon="pi pi-pencil" onClick={() => openEditShipment(shipment, index)} />
+                            </div>
+                        </AccordionTab>
+                    ))}
+                </Accordion>
+            ) : (
+                    <p>No Shipments Yet</p>
+                )}
+            </div>
+
 
             {/* Order Timeline Section */}
             <div className="col-12">
@@ -200,7 +279,7 @@ const OrderDetails = () => {
             />
 
              {/* Shipment Dialog */}
-            <Dialog header="Add Shipment" visible={isShipmentDialogVisible} onHide={closeShipmentDialog}>
+            <Dialog header={editMode ? 'Edit Shipment' : 'Add Shipment'} modal className="Add Shipment" visible={isShipmentDialogVisible} onHide={closeShipmentDialog}> 
                 <div className="field">
                     <label htmlFor="shipmentId">Shipment ID</label>
                     <InputText 

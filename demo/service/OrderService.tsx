@@ -88,8 +88,29 @@ export const OrderService = {
         try {
             const orderDoc = doc(db, 'orders', orderId);
 
+            // Ensure Shipments is properly structured before sending to Firestore
+            const updatedShipments = updatedOrder.shipments ? updatedOrder.shipments.map(shipment => ({
+                shipmentId: shipment.shipmentId || '',
+                destination: shipment.destination || '',
+                cartons: shipment.cartons || 0,
+                cbm: shipment.cbm || 0,
+                weight: shipment.weight || 0,
+                amazonShipmentId: shipment.amazonShipmentId || '',
+                amazonReference: shipment.amazonReference || '',
+                giHbl: shipment.giHbl || '',
+                giQuote: shipment.giQuote || '',
+                insurance: shipment.insurance || 0
+            })) : [];
+    
+
             // Remove the 'id' field from the updated order before sending to Firestore
             const { id, ...updatedOrderWithoutId } = updatedOrder;
+
+            // Log the data being sent to Firestore
+            console.log("Updating Firestore with order:", {
+                ...updatedOrderWithoutId,
+                shipments: updatedShipments
+            });
 
             await updateDoc(orderDoc, {
                 ...updatedOrderWithoutId,
@@ -102,11 +123,16 @@ export const OrderService = {
                 deliveredToAmazonDate: updatedOrder.deliveredToAmazonDate ? Timestamp.fromDate(updatedOrder.deliveredToAmazonDate) : null,
                 availableInAmazonDate: updatedOrder.availableInAmazonDate ? Timestamp.fromDate(updatedOrder.availableInAmazonDate) : null,
                 coverageDate: updatedOrder.coverageDate ? Timestamp.fromDate(updatedOrder.coverageDate) : null,
+                shipments: updatedShipments, // Handle shipments array
                 contract: updatedOrder.contract || '',
                 deposit: updatedOrder.deposit || 0,
                 totalCost: updatedOrder.totalCost || 0,
                 updated_at: serverTimestamp()
             });
+
+            // Add this log to confirm the shipments data is being passed to Firestore
+            console.log("Updated shipments in Firestore:", updatedShipments);
+            
             console.log("Order updated successfully!");
         } catch (error) {
             console.error('Error updating order:', error);
