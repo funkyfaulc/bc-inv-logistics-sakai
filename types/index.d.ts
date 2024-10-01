@@ -1,5 +1,10 @@
-import React, { ReactNode } from 'react';
-import {
+// bc-inv-logistics-sakai/types/index.d.ts
+
+import React from 'react'; // Add this line to import React
+import { Order, Shipment, ShipmentItem, EventItem } from './orders';
+
+// Existing imports
+import { 
     Page,
     AppBreadcrumbProps,
     Breadcrumb,
@@ -10,7 +15,7 @@ import {
     LayoutConfig,
     LayoutState,
     AppBreadcrumbState,
-    Breadcrumb,
+    Breadcrumb as BreadcrumbAlias,
     LayoutContextProps,
     MailContextProps,
     MenuContextProps,
@@ -23,12 +28,24 @@ import {
     AppMenuItemProps,
     AppMenuItem
 } from './layout';
-import { Demo, LayoutType, SortOrderType, CustomEvent, ChartDataState, ChartOptionsState, AppMailSidebarItem, AppMailReplyProps, AppMailProps } from './demo';
+
+import { 
+    Demo, 
+    LayoutType, 
+    SortOrderType, 
+    CustomEvent, 
+    ChartDataState, 
+    ChartOptionsState, 
+    AppMailSidebarItem, 
+    AppMailReplyProps, 
+    AppMailProps 
+} from './demo';
 
 type ChildContainerProps = {
-    children: ReactNode;
+    children: React.ReactNode;
 };
 
+// Export existing types
 export type {
     Page,
     AppBreadcrumbProps,
@@ -38,7 +55,7 @@ export type {
     MenuModel,
     LayoutConfig,
     LayoutState,
-    Breadcrumb,
+    BreadcrumbAlias as Breadcrumb,
     LayoutContextProps,
     MailContextProps,
     MenuContextProps,
@@ -58,5 +75,10 @@ export type {
     AppMailSidebarItem,
     AppMailReplyProps,
     AppMailProps,
-    AppMenuItem
+    AppMenuItem,
+    // Export new types
+    Order,
+    Shipment,
+    ShipmentItem,
+    EventItem
 };

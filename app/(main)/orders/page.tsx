@@ -9,24 +9,9 @@ import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { Calendar } from 'primereact/calendar';
-import { OrderService } from '../../../demo/service/OrderService';
+import { OrderService } from '../../../demo/services/OrderService';
 import { useRouter } from 'next/navigation';  
 
-interface Order {
-    id: string;
-    orderId: string;
-    orderDate: Date | null;
-    finalCountDate: Date | null;
-    finishManufactureDate: Date | null;
-    leavePortDate: Date | null;
-    arrivePortDate: Date | null;
-    deliveredToAmazonDate: Date | null;
-    availableInAmazonDate: Date | null;
-    coverageDate: Date | null;
-    contract: string;
-    deposit: number;
-    totalCost: number;
-}
 
 const OrderManagement = () => {
     const emptyOrder: Order = {

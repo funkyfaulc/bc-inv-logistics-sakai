@@ -18,7 +18,16 @@ interface Order {
     totalCost?: number;
     created_at?: any;
     updated_at?: any;
+    shipments?: Shipment[];
 }
+
+
+//New ShipmentItem Interface
+interface ShipmentItem {
+    sku: string; //reference SKU from products collection
+    unitcount: number; //number of units for this sku
+}
+
 
 // Firestore collection reference for orders
 const orderCollection = collection(db, 'orders');
@@ -132,7 +141,7 @@ export const OrderService = {
 
             // Add this log to confirm the shipments data is being passed to Firestore
             console.log("Updated shipments in Firestore:", updatedShipments);
-            
+
             console.log("Order updated successfully!");
         } catch (error) {
             console.error('Error updating order:', error);

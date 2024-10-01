@@ -27,7 +27,7 @@ import { SelectButton } from "primereact/selectbutton";
 import { Slider } from "primereact/slider";
 import { ToggleButton } from "primereact/togglebutton";
 import { useEffect, useState } from "react";
-import { CountryService } from "../../../../demo/service/CountryService";
+import { CountryService } from "../../../../demo/service_template/CountryService";
 
 interface InputValue {
     name: string;
