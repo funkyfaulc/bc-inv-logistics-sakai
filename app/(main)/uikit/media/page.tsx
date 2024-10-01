@@ -6,7 +6,7 @@ import { Galleria } from 'primereact/galleria';
 import { Image } from 'primereact/image';
 import React, { useEffect, useState } from 'react';
 import { PhotoService } from '../../../../demo/service_template/PhotoService';
-import { ProductService } from '../../../../demo/service_template/ProductService';
+import { ProductService } from '../../../../demo/services/ProductService';
 import type { Demo } from '@/types';
 
 const MediaDemo = () => {

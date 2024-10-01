@@ -1,36 +1,37 @@
 // app/(main)/orders/[id]/page.tsx
 
 'use client';
-import { useParams } from 'next/navigation';  
-import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
-import { OrderService } from '@/demo/services/OrderService';
 import { Timeline } from 'primereact/timeline';
 import { Dialog } from 'primereact/dialog';
-import { InputText } from 'primereact/inputtext'; // for shipment dialog input fields
-import { Accordion, AccordionTab } from 'primereact/accordion'; // Import accordion for collapsible panels
-import { Dropdown } from 'primereact/dropdown'; // If using Dropdown for boats
-import { Calendar } from 'primereact/calendar'; // Import Calendar component for date selection
-import { AutoComplete } from 'primereact/autocomplete';
-import { CSVReader } from 'react-papaparse';
+import { InputText } from 'primereact/inputtext';
+import { Accordion, AccordionTab } from 'primereact/accordion';
+import { Dropdown } from 'primereact/dropdown';
+import { Calendar } from 'primereact/calendar';
+import { Toast } from 'primereact/toast';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
 
+import OrderEditModal from '@/app/(main)/orders/modal/OrderEditModal';
 
+import { Order, Shipment, ShipmentItem, EventItem } from '@/types/orders';
+import { Product } from '@/types/products';
 
-import OrderEditModal from '@/app/(main)/orders/modal/OrderEditModal';  // Ensure the path is correct
-
-// Import centralized interfaces
-import { Order, Shipment, ShipmentItem, EventItem } from '@/types/orders'; // Adjust the path as needed
+import { OrderService } from '@/demo/services/OrderService';
+import { ProductService } from '@/demo/services/ProductService'; // Ensure correct import
 
 const OrderDetails = () => {
     const { id } = useParams();
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
-    const [isEditModalVisible, setIsEditModalVisible] = useState(false);  // Control modal visibility
-    const [isShipmentDialogVisible, setIsShipmentDialogVisible] = useState(false);  // Shipment dialog visibility
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [isShipmentDialogVisible, setIsShipmentDialogVisible] = useState(false);
     const [submitted, setSubmitted] = useState(false);
-    const [editMode, setEditMode] = useState(false);  // Track whether we are editing
-    const [editedShipmentIndex, setEditedShipmentIndex] = useState<number | null>(null);  // Track the index of the shipment being edited
+    const [editMode, setEditMode] = useState(false);
+    const [editedShipmentIndex, setEditedShipmentIndex] = useState<number | null>(null);
     const [newShipment, setNewShipment] = useState<Shipment>({
         shipmentId: '',
         destination: '',
@@ -42,20 +43,24 @@ const OrderDetails = () => {
         giHbl: '',
         giQuote: '',
         insurance: 0,
-        items: [], // Initialize as empty array
-        boats: '', // Initialize as empty string
-        departureDate: null, // Initialize new fields
-        arrivalDate: null,   // Initialize new fields
+        items: [],
+        boats: '',
+        departureDate: null,
+        arrivalDate: null,
     });
 
+    const [products, setProducts] = useState<Product[]>([]); // State to hold products
+
+    const toast = useRef<Toast>(null);
+
+    // Fetch Order Details
     useEffect(() => {
         if (id) {
             OrderService.getOrderById(id).then((data) => {
-                // Ensure all shipments have the boats field
                 if (data && data.shipments) {
                     const updatedShipments = data.shipments.map(shipment => ({
                         ...shipment,
-                        boats: shipment.boats || [], // Default to empty array if undefined
+                        boats: shipment.boats || '', // Ensure boats is a string
                     }));
                     setOrder({ ...data, shipments: updatedShipments });
                 } else {
@@ -66,16 +71,25 @@ const OrderDetails = () => {
         }
     }, [id]);
 
+    // Fetch Products for SKU Dropdown
+    useEffect(() => {
+        const fetchProducts = async () => {
+            const fetchedProducts = await ProductService.getProducts();
+            setProducts(fetchedProducts);
+        };
+        fetchProducts();
+    }, []);
+
     const openEditModal = () => {
-        setIsEditModalVisible(true);  // Show the modal
+        setIsEditModalVisible(true);
     };
 
     const closeEditModal = () => {
-        setIsEditModalVisible(false);  // Hide the modal
+        setIsEditModalVisible(false);
     };
 
     const openShipmentDialog = () => {
-        setEditMode(false); // Reset edit mode for adding new shipment
+        setEditMode(false);
         setNewShipment({
             shipmentId: '',
             destination: '',
@@ -88,21 +102,22 @@ const OrderDetails = () => {
             giQuote: '',
             insurance: 0,
             items: [],
-            boats: []
+            boats: '',
+            departureDate: null,
+            arrivalDate: null,
         });
         setIsShipmentDialogVisible(true);
     };
 
-    // Edit Shipment
     const openEditShipment = (shipment: Shipment, index: number) => {
-        setEditMode(true);  // Set edit mode to true
-        setEditedShipmentIndex(index); // Keep track of the shipment being edited
-        setNewShipment(shipment);  // Pre-fill the dialog with the shipment details
-        setIsShipmentDialogVisible(true);  // Open the shipment dialog
+        setEditMode(true);
+        setEditedShipmentIndex(index);
+        setNewShipment(shipment);
+        setIsShipmentDialogVisible(true);
     };
 
     const closeShipmentDialog = () => {
-        setIsShipmentDialogVisible(false);  // Close shipment dialog
+        setIsShipmentDialogVisible(false);
     };
 
     const saveOrder = async () => {
@@ -115,36 +130,41 @@ const OrderDetails = () => {
     };
 
     const saveShipment = async () => {
-        console.log("saveShipment called!"); // Verify the function is being triggered
-
         if (order) {
             let updatedShipments = [...(order.shipments || [])];
 
-            // Ensure that newShipment is valid
             if (editMode && editedShipmentIndex !== null) {
                 if (newShipment && editedShipmentIndex >= 0 && editedShipmentIndex < updatedShipments.length) {
-                    updatedShipments[editedShipmentIndex] = { ...newShipment };  // Update existing shipment
+                    updatedShipments[editedShipmentIndex] = { ...newShipment };
                 }
             } else {
-                // Add new shipment only if it's valid
                 if (newShipment && newShipment.shipmentId && newShipment.amazonShipmentId) {
-                    updatedShipments = [...updatedShipments, { ...newShipment }]; // Add new shipment
+                    updatedShipments = [...updatedShipments, { ...newShipment }];
                 }
             }
 
             const updatedOrder = { ...order, shipments: updatedShipments };
 
-            // Log new shipment data
-            console.log('New Shipment Data:', newShipment);
-
-            // Log to check if updatedOrder contains the correct shipment data
-            console.log('Updated Order with shipments:', updatedOrder);
-
             setOrder(updatedOrder);
 
-            await OrderService.updateOrder(order.id, updatedOrder);  // Update Firestore
+            try {
+                await OrderService.updateOrder(order.id, updatedOrder);
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: editMode ? 'Shipment Updated' : 'Shipment Added',
+                    life: 3000
+                });
+            } catch (error) {
+                console.error('Error saving shipment:', error);
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to save shipment',
+                    life: 3000
+                });
+            }
 
-            // Reset shipment and dialog state
             setNewShipment({
                 shipmentId: '',
                 destination: '',
@@ -157,12 +177,14 @@ const OrderDetails = () => {
                 giQuote: '',
                 insurance: 0,
                 items: [],
-                boats: []
+                boats: '',
+                departureDate: null,
+                arrivalDate: null,
             });
 
-            setIsShipmentDialogVisible(false);  // Close shipment dialog
-            setEditMode(false);  // Reset edit mode
-            setEditedShipmentIndex(null);   // Reset edited shipment index
+            setIsShipmentDialogVisible(false);
+            setEditMode(false);
+            setEditedShipmentIndex(null);
         }
     };
 
@@ -202,10 +224,9 @@ const OrderDetails = () => {
 
                     {/* Add Shipment Button */}
                     <Button label="Add Shipment" icon="pi pi-plus" className="ml-2" onClick={openShipmentDialog} />
-
                 </Card>
             </div>
-            
+
             {/* Shipments Section */}
             <div className="col-12">
                 {order.shipments && order.shipments.length > 0 ? (
@@ -221,9 +242,23 @@ const OrderDetails = () => {
                                     <p><strong>Guided Imports HBL:</strong> {shipment.giHbl}</p>
                                     <p><strong>Guided Imports Quote:</strong> {shipment.giQuote}</p>
                                     <p><strong>Insurance:</strong> ${shipment.insurance}</p>
-                                    <p><strong>Boats:</strong> {shipment.boats?.join(', ') || 'N/A'}</p>
+                                    <p><strong>Boats:</strong> {shipment.boats || 'N/A'}</p>
                                     <Button label="Edit Shipment" icon="pi pi-pencil" onClick={() => openEditShipment(shipment, index)} />
                                 </div>
+
+                                {/* Display Shipment Items */}
+                                {shipment.items && shipment.items.length > 0 ? (
+                                    <div className="mt-3">
+                                        <h5>Items:</h5>
+                                        <DataTable value={shipment.items} paginator rows={5} responsiveLayout="scroll">
+                                            <Column field="sku" header="SKU"></Column>
+                                            <Column field="unitCount" header="Unit Count"></Column>
+                                            {/* Add more columns if needed */}
+                                        </DataTable>
+                                    </div>
+                                ) : (
+                                    <p>No Items in this Shipment.</p>
+                                )}
                             </AccordionTab>
                         ))}
                     </Accordion>
@@ -266,7 +301,15 @@ const OrderDetails = () => {
             />
 
             {/* Shipment Dialog */}
-            <Dialog header={editMode ? 'Edit Shipment' : 'Add Shipment'} modal className="Add Shipment" visible={isShipmentDialogVisible} onHide={closeShipmentDialog}> 
+            <Dialog
+                header={editMode ? 'Edit Shipment' : 'Add Shipment'}
+                modal
+                className="Add Shipment"
+                visible={isShipmentDialogVisible}
+                onHide={closeShipmentDialog}
+                style={{ width: '600px' }} // Increased width to accommodate items
+            > 
+                {/* Shipment Details */}
                 <div className="field">
                     <label htmlFor="shipmentId">Shipment ID</label>
                     <InputText 
@@ -283,7 +326,7 @@ const OrderDetails = () => {
                         value={newShipment.amazonShipmentId} 
                         onChange={(e) => setNewShipment({ ...newShipment, amazonShipmentId: e.target.value })} 
                         required 
-                        style={{ width: '250px' }} // Adjust the width as needed
+                        style={{ width: '250px' }}
                     />
                 </div>
                 <div className="field">
@@ -347,8 +390,8 @@ const OrderDetails = () => {
                     />
                 </div>
 
-                 {/*Fields for Gi HBL and Gi Quote */}
-                 <div className="field">
+                {/* Fields for Gi HBL and Gi Quote */}
+                <div className="field">
                     <label htmlFor="giHbl">Guided Imports HBL</label>
                     <InputText
                         id="giHbl"
@@ -366,12 +409,12 @@ const OrderDetails = () => {
                         required
                     />
                 </div>
-                  
-                {/* New Boat Name Field */}
+                
+                {/* Boat Name Field */}
                 <div className="field">
-                    <label htmlFor="boatName">Boat Name</label>
+                    <label htmlFor="boats">Boat Name</label>
                     <InputText
-                        id="boatName"
+                        id="boats"
                         value={newShipment.boats}
                         onChange={(e) => setNewShipment({ ...newShipment, boats: e.target.value })}
                         placeholder="Enter Boat Name"
@@ -379,9 +422,8 @@ const OrderDetails = () => {
                     />
                 </div>        
 
-
-                  {/* New Fields for Departure and Arrival Dates */}
-                  <div className="field">
+                {/* Departure and Arrival Dates */}
+                <div className="field">
                     <label htmlFor="departureDate">Departure Date</label>
                     <Calendar
                         id="departureDate"
@@ -403,30 +445,31 @@ const OrderDetails = () => {
                         required
                     />
                 </div>                
-                
-
-                {/* Assign Boats Section REMOVED 09302024 */}
-      
 
                 {/* Items Section */}
                 <div className="field">
                     <label>Items</label>
                     {newShipment.items.map((item, index) => (
                         <div key={index} className="p-grid p-fluid">
-                            <div className="p-col-6">
-                                <InputText
+                            <div className="p-col-5">
+                                <label htmlFor={`sku-${index}`}>SKU</label>
+                                <Dropdown
+                                    id={`sku-${index}`}
                                     value={item.sku}
+                                    options={products.map(p => ({ label: p.sku, value: p.sku }))}
                                     onChange={(e) => {
                                         const updatedItems = [...newShipment.items];
-                                        updatedItems[index].sku = e.target.value;
+                                        updatedItems[index].sku = e.value as string;
                                         setNewShipment({ ...newShipment, items: updatedItems });
                                     }}
-                                    placeholder="Enter SKU"
+                                    placeholder="Select SKU"
                                     required
                                 />
                             </div>
-                            <div className="p-col-4">
+                            <div className="p-col-5">
+                                <label htmlFor={`unitCount-${index}`}>Unit Count</label>
                                 <InputText
+                                    id={`unitCount-${index}`}
                                     type="number"
                                     value={item.unitCount}
                                     onChange={(e) => {
@@ -437,7 +480,7 @@ const OrderDetails = () => {
                                             setNewShipment({ ...newShipment, items: updatedItems });
                                         }
                                     }} 
-                                    placeholder="Unit Count"
+                                    placeholder="Enter Unit Count"
                                     required
                                 />
                             </div>
@@ -445,7 +488,7 @@ const OrderDetails = () => {
                                 <Button 
                                     label="Remove" 
                                     icon="pi pi-times" 
-                                    className="p-button-danger" 
+                                    className="p-button-danger p-mt-4" 
                                     onClick={() => {
                                         const updatedItems = newShipment.items.filter((_, i) => i !== index);
                                         setNewShipment({ ...newShipment, items: updatedItems });
@@ -467,7 +510,10 @@ const OrderDetails = () => {
                     />
                 </div>
 
-                <Button label="Save Shipment" icon="pi pi-check" onClick={saveShipment} />
+                {/* Save Shipment Button */}
+                <div className="p-d-flex p-jc-end p-mt-4">
+                    <Button label="Save Shipment" icon="pi pi-check" onClick={saveShipment} />
+                </div>
             </Dialog>
         </div>
     );

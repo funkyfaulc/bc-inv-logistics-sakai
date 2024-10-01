@@ -1,6 +1,7 @@
 // bc-inv-logistics-sakai/types/orders.ts
 
 import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
+import { Product } from './products'; // Adjust the import path if necessary
 
 
 export interface ShipmentItem {
