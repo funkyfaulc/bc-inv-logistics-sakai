@@ -139,15 +139,15 @@ const Crud = () => {
             const existingSKUs = new Set(existingProductsSnapshot.map(p => p.sku));
             const existingASINs = new Set(existingProductsSnapshot.map(p => p.asin));
     
-            // Check for duplicates (either by SKU or ASIN)
+           // Updated to prefer ASIN over SKU
             if (
-                existingSKUs.has(product.sku) && product.id !== existingProductsSnapshot.find(p => p.sku === product.sku).id ||
-                (product.asin && existingASINs.has(product.asin) && product.id !== existingProductsSnapshot.find(p => p.asin === product.asin).id)
+                (product.asin && existingASINs.has(product.asin) && product.id !== existingProductsSnapshot.find(p => p.asin === product.asin).id) ||
+                (existingSKUs.has(product.sku) && product.id !== existingProductsSnapshot.find(p => p.sku === product.sku).id)
             ) {
                 toast.current.show({
                     severity: 'warn', 
                     summary: 'Duplicate Found', 
-                    detail: `Cannot Update, Duplicate Found (SKU: ${product.sku} or ASIN: ${product.asin})`, 
+                    detail: `Cannot Update, Duplicate Found (ASIN: ${product.asin} or SKU: ${product.sku})`, 
                     life: 4000
                 });
                 return; // Prevent further execution if duplicate found
@@ -312,9 +312,12 @@ const Crud = () => {
             const existingASINs = new Set(existingProductsSnapshot.map(product => product.asin)); // Collect existing ASINs
     
             for (const product of products) {
-                // Check for duplicates (either by SKU or ASIN)
-                if (existingSKUs.has(product.sku) || (product.asin && existingASINs.has(product.asin))) {
-                    errors.push(`Duplicate found (SKU: ${product.sku || 'N/A'} or ASIN: ${product.asin || 'N/A'})`);
+               // Updated to prioritize ASIN for duplicate checking
+                if (product.asin && existingASINs.has(product.asin)) {
+                    errors.push(`Duplicate found (ASIN: ${product.asin})`);
+                    continue; // Skip this product
+                } else if (existingSKUs.has(product.sku)) {
+                    errors.push(`Duplicate found (SKU: ${product.sku || 'N/A'})`);
                     continue; // Skip this product
                 }
     

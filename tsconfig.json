@@ -28,7 +28,7 @@
       "@firebase": ["app/firebase"],
       "@/*": ["./*"],
       "@types/*": ["types/*"],
-      "@services/*": ["app/demo/services/*"],
+      "@services/*": ["/demo/services/*"],
       "@components/*": ["app/components/*"]
     }
   },
