@@ -65,11 +65,15 @@ const Reporting = () => {
         });
 
         filteredOrders.forEach(order => {
-            if (order.items) {
-                order.items.forEach(item => {
-                    if (inventoryMap[item.sku]) {
-                        inventoryMap[item.sku].totalUnits += item.totalUnitCount;
-                        inventoryMap[item.sku].totalCartons += item.totalCartonCount;
+            if (order.shipments) {
+                order.shipments.forEach(shipment => {
+                    if (shipment.items) {
+                        shipment.items.forEach(item => {
+                            if (inventoryMap[item.sku]) {
+                                inventoryMap[item.sku].totalUnits += item.unitCount;
+                                inventoryMap[item.sku].totalCartons += shipment.cartons; // Assuming cartons are per shipment
+                            }
+                        });
                     }
                 });
             }

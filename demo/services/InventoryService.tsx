@@ -2,16 +2,7 @@
 
 import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore';
 import { db } from '../../app/firebase'; // Adjust path as necessary
-
-export interface InventoryUpdate {
-    id?: string;
-    asin: string; // Product identifier
-    sku: string; // Product identifier
-    availableUnits: number;
-    reservedUnits: number;
-    inboundUnits: number;
-    timestamp: Timestamp; // Timestamp of the inventory update
-}
+import { InventoryUpdate } from '../../types/inventory';
 
 // Firestore collection reference for inventory updates
 const inventoryCollection = collection(db, 'inventory_updates');

@@ -22,6 +22,7 @@ const LoginPage = () => {
 
     const containerClassName = classNames('surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden', { 'p-input-filled': layoutConfig.inputStyle === 'filled' });
 
+    /*
     const handleGoogleSignIn = async () => {
         const googleProvider = new firebase.auth.GoogleAuthProvider();
         try {
@@ -46,6 +47,7 @@ const LoginPage = () => {
             setError('Error during sign-in. Please try again.');
         }
     };
+    */
 
     return (
         <div className={containerClassName}>
@@ -88,7 +90,7 @@ const LoginPage = () => {
                                 </a>
                             </div>
 
-                            <Button label="Sign In" className="w-full p-3 text-xl" onClick={handleGoogleSignIn}></Button>
+                           {/* <Button label="Sign In" className="w-full p-3 text-xl" onClick={handleGoogleSignIn}></Button>*/}
                         </div>
                     </div>
                 </div>
