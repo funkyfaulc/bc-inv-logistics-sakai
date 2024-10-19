@@ -1,17 +1,17 @@
-import { Metadata } from 'next';
+// /app/(full-page)/layout.tsx
+'use client';  
+
 import AppConfig from '../../layout/AppConfig';
 import React from 'react';
+import { useAuthRedirect } from '../hooks/useAuthRedirect'; // Import the redirect hook
 
 interface SimpleLayoutProps {
     children: React.ReactNode;
 }
 
-export const metadata: Metadata = {
-    title: 'PrimeReact Sakai',
-    description: 'The ultimate collection of design-agnostic, flexible and accessible React UI Components.'
-};
-
 export default function SimpleLayout({ children }: SimpleLayoutProps) {
+    useAuthRedirect(); // Use the hook to handle authentication and redirection
+
     return (
         <React.Fragment>
             {children}

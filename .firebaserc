@@ -1,0 +1,10 @@
+{
+  "projects": {
+    "firebase use": "bc-inv-logistics",
+    "main": "bc-inv-logistics",
+    "default": "bc-inv-logistics"
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
+}
