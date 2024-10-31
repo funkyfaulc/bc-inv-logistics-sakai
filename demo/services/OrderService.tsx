@@ -30,6 +30,7 @@ const orderCollection = collection(db, 'orders');
 // Helper function to map Frontend Order to Firestore Order
 // demo/services/OrderService.tsx
 
+// Updated `mapFirestoreOrderToOrder`
 const mapFirestoreOrderToOrder = (firestoreOrder: OrderFirestore, id: string): Order => {
     return {
         id,
@@ -43,15 +44,8 @@ const mapFirestoreOrderToOrder = (firestoreOrder: OrderFirestore, id: string): O
         availableInAmazonDate: firestoreOrder.availableInAmazonDate ? firestoreOrder.availableInAmazonDate.toDate() : null,
         coverageDate: firestoreOrder.coverageDate ? firestoreOrder.coverageDate.toDate() : null,
         contract: firestoreOrder.contract || '',
-        // Convert deposit to number if it's a string
-        deposit: typeof firestoreOrder.deposit === 'number' 
-            ? firestoreOrder.deposit 
-            : parseFloat(firestoreOrder.deposit) || 0,
-        // Convert totalCost to number if it's a string
-        totalCost: typeof firestoreOrder.totalCost === 'number' 
-            ? firestoreOrder.totalCost 
-            : parseFloat(firestoreOrder.totalCost) || 0,
-        // Ensure shipments is an array before mapping
+        deposit: typeof firestoreOrder.deposit === 'number' ? firestoreOrder.deposit : parseFloat(firestoreOrder.deposit) || 0,
+        totalCost: typeof firestoreOrder.totalCost === 'number' ? firestoreOrder.totalCost : parseFloat(firestoreOrder.totalCost) || 0,
         shipments: Array.isArray(firestoreOrder.shipments) ? firestoreOrder.shipments.map(shipment => ({
             shipmentId: shipment.shipmentId,
             destination: shipment.destination,
@@ -63,10 +57,10 @@ const mapFirestoreOrderToOrder = (firestoreOrder: OrderFirestore, id: string): O
             giHbl: shipment.giHbl,
             giQuote: shipment.giQuote,
             insurance: shipment.insurance,
-            items: Array.isArray(shipment.items) ? shipment.items.map(item => ({
+            items: shipment.items.map(item => ({
                 sku: item.sku,
-                unitCount: item.unitCount
-            })) : [],
+                unitCount: item.unitCount,
+            })),
             boats: shipment.boats || '',
             departureDate: shipment.departureDate ? shipment.departureDate.toDate() : null,
             arrivalDate: shipment.arrivalDate ? shipment.arrivalDate.toDate() : null,
@@ -74,7 +68,7 @@ const mapFirestoreOrderToOrder = (firestoreOrder: OrderFirestore, id: string): O
     };
 };
 
-// **Define the Helper Function to Map Frontend Order to Firestore Order**
+// Updated `mapOrderToFirestore`
 const mapOrderToFirestore = (order: Order): OrderFirestore => {
     return {
         orderId: order.orderId,
@@ -87,8 +81,8 @@ const mapOrderToFirestore = (order: Order): OrderFirestore => {
         availableInAmazonDate: order.availableInAmazonDate ? Timestamp.fromDate(order.availableInAmazonDate) : null,
         coverageDate: order.coverageDate ? Timestamp.fromDate(order.coverageDate) : null,
         contract: order.contract || '',
-        deposit: order.deposit || 0,
-        totalCost: order.totalCost || 0,
+        deposit: order.deposit ?? 0,
+        totalCost: order.totalCost ?? 0,
         created_at: serverTimestamp() as Timestamp,
         updated_at: serverTimestamp() as Timestamp,
         shipments: order.shipments ? order.shipments.map(shipment => ({

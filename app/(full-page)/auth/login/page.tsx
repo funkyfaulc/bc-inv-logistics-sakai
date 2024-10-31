@@ -8,9 +8,8 @@ import { Password } from 'primereact/password';
 import { LayoutContext } from '../../../../layout/context/layoutcontext';
 import { InputText } from 'primereact/inputtext';
 import { classNames } from 'primereact/utils';
-import { auth } from '../../../firebase'; // Make sure the Firebase import path is correct
+import { auth } from '../../../firebase'; // Firebase import path
 import { signInWithEmailAndPassword } from 'firebase/auth'; // Import signInWithEmailAndPassword
-
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
@@ -29,13 +28,12 @@ const LoginPage = () => {
     const handleLogin = async () => {
         try {
             await signInWithEmailAndPassword(auth, email, password);
-            router.push('/'); // Redirect to the home/dashboard page after successful login
+            router.push('/'); // Redirect to home/dashboard after login
         } catch (error) {
-            console.error('Login error:', error); // Log the error for debugging
+            console.error('Login error:', error); // Log error for debugging
             setError('Login failed. Please check your credentials and try again.');
         }
     };
-    
 
     return (
         <div className={containerClassName}>

@@ -24,7 +24,7 @@ import { OrderService } from '@/demo/services/OrderService';
 import { ProductService } from '@/demo/services/ProductService'; // Ensure correct import
 
 const OrderDetails = () => {
-    const { id } = useParams();
+    const { id } = useParams() as { id: string }; //Expect id to be string
     const [order, setOrder] = useState<Order | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -123,14 +123,14 @@ const OrderDetails = () => {
     const saveOrder = async () => {
         setSubmitted(true);
         if (order && order.id) {
-            await OrderService.updateOrder(order.id, order);
+            await OrderService.updateOrder(order.id as string, order);
             setIsEditModalVisible(false);
             setSubmitted(false);
         }
     };
 
     const saveShipment = async () => {
-        if (order) {
+        if (order && order.id) {
             let updatedShipments = [...(order.shipments || [])];
 
             if (editMode && editedShipmentIndex !== null) {

@@ -94,6 +94,14 @@ const AppMenu = () => {
                     icon: 'pi pi-fw pi-truck',
                     to: '/orders'
                 },
+
+                {
+                    label: 'EOM Inventory',
+                    icon: 'pi pi-fw pi-chart-line',
+                    to: '/reporting/'
+                },
+
+
                 /*
                 {
                     label: 'Timeline',

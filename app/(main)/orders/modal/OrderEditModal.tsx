@@ -1,3 +1,5 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/orders/modal/OrderEditModal.tsx
+
 import React from 'react';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
@@ -31,16 +33,25 @@ interface OrderEditModalProps {
 }
 
 const OrderEditModal: React.FC<OrderEditModalProps> = ({ order, setOrder, visible, onHide, onSave, submitted }) => {
-    const onInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLInputElement>, name: string) => {
+    const onInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLInputElement>, name: keyof Order) => {
         const val = e.target.value;
         let _order = { ...order };
-
-        if (['orderDate', 'finalCountDate', 'finishManufactureDate', 'leavePortDate', 'arrivePortDate', 'deliveredToAmazonDate', 'availableInAmazonDate', 'coverageDate'].includes(name)) {
-            _order[name] = e.target.value ? new Date(e.target.value) : null;
-        } else {
+    
+        // Handle date fields
+        if (name === 'orderDate' || name === 'finalCountDate' || name === 'finishManufactureDate' ||
+            name === 'leavePortDate' || name === 'arrivePortDate' || name === 'deliveredToAmazonDate' ||
+            name === 'availableInAmazonDate' || name === 'coverageDate') {
+            _order[name] = val ? (new Date(val) as any) : null;
+        } 
+        // Handle numeric fields
+        else if (name === 'deposit' || name === 'totalCost') {
+            _order[name] = val ? parseFloat(val) : 0;
+        } 
+        // Handle string fields
+        else if (typeof _order[name] === 'string') {
             _order[name] = val;
         }
-
+    
         setOrder(_order);
     };
 

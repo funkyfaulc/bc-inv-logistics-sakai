@@ -1,3 +1,5 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/orders/page.tsx
+
 'use client';
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
@@ -68,34 +70,31 @@ const OrderManagement = () => {
         setSubmitted(false);
         setOrderDialog(false);
     };
-
     const saveOrder = async () => {
         setSubmitted(true);
-
+    
         if (order.orderId && order.orderDate) {
             let _orders = [...orders];
             let _order = { ...order };
-
+    
             if (order.id) {
                 const index = findIndexById(order.id);
                 _orders[index] = _order;
-                toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Order Updated', life: 3000 });
-
                 await OrderService.updateOrder(order.id, _order);
+                toast.current?.show({ severity: 'success', summary: 'Successful', detail: 'Order Updated', life: 3000 });
             } else {
-                // Ensure orderId is passed explicitly here
                 _order.orderId = order.orderId;
-                _orders.push(_order);
-                toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Order Created', life: 3000 });
-
                 await OrderService.addOrder(_order);
+                toast.current?.show({ severity: 'success', summary: 'Successful', detail: 'Order Created', life: 3000 });
             }
-
-            setOrders(_orders);
+    
+            // Trigger a refresh of the orders list after creating or updating
+            await fetchOrders();
+    
             setOrderDialog(false);
             setOrder(emptyOrder);
         } else {
-            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Order ID and Order Date are required', life: 3000 });
+            toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Order ID and Order Date are required', life: 3000 });
         }
     };
 
@@ -145,14 +144,15 @@ const OrderManagement = () => {
     const onInputChange = (e, name) => {
         const val = e.target && e.target.value;
         let _order = { ...order };
-
-        // Only check for Date instance if the field is related to dates
+    
         if (['orderDate', 'finalCountDate', 'finishManufactureDate', 'leavePortDate', 'arrivePortDate', 'deliveredToAmazonDate', 'availableInAmazonDate', 'coverageDate'].includes(name)) {
             _order[name] = val instanceof Date ? val : null; // Handle dates
+        } else if (name === 'deposit' || name === 'totalCost') {
+            _order[name] = val ? parseFloat(val) : 0; // Convert to number for deposit and totalCost
         } else {
-            _order[name] = val; // Direct assignment for non-date fields like orderId
+            _order[name] = val;
         }
-
+    
         setOrder(_order);
     };
 

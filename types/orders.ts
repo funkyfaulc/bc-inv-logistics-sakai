@@ -1,8 +1,5 @@
-// bc-inv-logistics-sakai/types/orders.ts
-
 import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
 import { Product } from './products'; // Adjust the import path if necessary
-
 
 export interface ShipmentItem {
     sku: string; // Reference to SKU from products collection
@@ -20,10 +17,10 @@ export interface Shipment {
     giHbl: string;
     giQuote: string;
     insurance: number;
-    items: ShipmentItem[]; // New field
-    boats: string; // New field
-    departureDate: Date | null; // New field
-    arrivalDate: Date | null;   // New field
+    items: ShipmentItem[]; // Items are part of shipments
+    boats: string;
+    departureDate: Date | null;
+    arrivalDate: Date | null;
 }
 
 export interface Order {
@@ -40,8 +37,7 @@ export interface Order {
     contract?: string;
     deposit?: number;
     totalCost?: number;
-    items: OrderItem[]; // New field to track total order items
-    shipments?: Shipment[]; // Updated field
+    shipments?: Shipment[]; // Shipments are associated with the order
 }
 
 export interface EventItem {
@@ -52,7 +48,7 @@ export interface EventItem {
     today?: boolean;
 }
 
-// **New Firestore-Specific Interfaces**
+// Firestore-Specific Interfaces
 export interface ShipmentItemFirestore {
     sku: string;
     unitCount: number;
@@ -71,8 +67,8 @@ export interface ShipmentFirestore {
     insurance: number;
     items: ShipmentItemFirestore[];
     boats: string;
-    departureDate: Timestamp | null; // New field
-    arrivalDate: Timestamp | null;   // New field
+    departureDate: Timestamp | null;
+    arrivalDate: Timestamp | null;
 }
 
 export interface OrderFirestore {
@@ -90,7 +86,6 @@ export interface OrderFirestore {
     totalCost: number;
     created_at: Timestamp;
     updated_at: Timestamp;
-    items: OrderItemFirestore[]; // New field
     shipments: ShipmentFirestore[];
 }
 
@@ -105,13 +100,3 @@ export interface OrderItemFirestore {
     totalUnitCount: number;
     totalCartonCount: number;
 }
-
-export interface EventItem {
-    status: string;
-    date: Date | null;
-    icon: string;
-    color?: string;
-    today?: boolean;
-}
-
-// Firestore-Specific Interfaces remain updated as shown above
