@@ -1,5 +1,8 @@
+//Old Version of OrderService.tsx Commenting out before build 12132024
+/*
+
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp, getDoc } from 'firebase/firestore';
-import { db } from '../../app/firebase';  // Adjust this path to your Firebase config
+import { db } from '../../app/firebase'; // Adjust this path to your Firebase config
 
 // Define the order interface
 interface Order {
@@ -21,13 +24,11 @@ interface Order {
     shipments?: Shipment[];
 }
 
-
 //New ShipmentItem Interface
 interface ShipmentItem {
     sku: string; //reference SKU from products collection
     unitcount: number; //number of units for this sku
 }
-
 
 // Firestore collection reference for orders
 const orderCollection = collection(db, 'orders');
@@ -36,7 +37,7 @@ export const OrderService = {
     // Fetch all orders from Firestore and convert Timestamps to JavaScript Date objects
     async getOrders(): Promise<Order[]> {
         const snapshot = await getDocs(orderCollection);
-        return snapshot.docs.map(doc => {
+        return snapshot.docs.map((doc) => {
             const data = doc.data();
             return {
                 ...data,
@@ -48,7 +49,7 @@ export const OrderService = {
                 arrivePortDate: data.arrivePortDate ? data.arrivePortDate.toDate() : null,
                 deliveredToAmazonDate: data.deliveredToAmazonDate ? data.deliveredToAmazonDate.toDate() : null,
                 availableInAmazonDate: data.availableInAmazonDate ? data.availableInAmazonDate.toDate() : null,
-                coverageDate: data.coverageDate ? data.coverageDate.toDate() : null,
+                coverageDate: data.coverageDate ? data.coverageDate.toDate() : null
             };
         });
     },
@@ -56,11 +57,11 @@ export const OrderService = {
     // Add a new order to Firestore
     async addOrder(order: Order): Promise<void> {
         try {
-            console.log("Attempting to add order:", order);
+            console.log('Attempting to add order:', order);
 
             // Check for duplicate orderId
             const existingOrdersSnapshot = await getDocs(orderCollection);
-            const existingOrderIds = existingOrdersSnapshot.docs.map(doc => doc.data().orderId);
+            const existingOrderIds = existingOrdersSnapshot.docs.map((doc) => doc.data().orderId);
 
             if (existingOrderIds.includes(order.orderId)) {
                 throw new Error(`Order with orderId: ${order.orderId} already exists.`);
@@ -68,7 +69,7 @@ export const OrderService = {
 
             // Remove the 'id' field from the order object before adding to Firestore
             const { id, ...orderDataWithoutId } = order;
-            
+
             await addDoc(orderCollection, {
                 ...orderDataWithoutId,
                 orderId: order.orderId,
@@ -86,7 +87,7 @@ export const OrderService = {
                 created_at: serverTimestamp(),
                 updated_at: serverTimestamp()
             });
-            console.log("Order added successfully!");
+            console.log('Order added successfully!');
         } catch (error) {
             console.error('Error adding order:', error);
         }
@@ -98,25 +99,26 @@ export const OrderService = {
             const orderDoc = doc(db, 'orders', orderId);
 
             // Ensure Shipments is properly structured before sending to Firestore
-            const updatedShipments = updatedOrder.shipments ? updatedOrder.shipments.map(shipment => ({
-                shipmentId: shipment.shipmentId || '',
-                destination: shipment.destination || '',
-                cartons: shipment.cartons || 0,
-                cbm: shipment.cbm || 0,
-                weight: shipment.weight || 0,
-                amazonShipmentId: shipment.amazonShipmentId || '',
-                amazonReference: shipment.amazonReference || '',
-                giHbl: shipment.giHbl || '',
-                giQuote: shipment.giQuote || '',
-                insurance: shipment.insurance || 0
-            })) : [];
-    
+            const updatedShipments = updatedOrder.shipments
+                ? updatedOrder.shipments.map((shipment) => ({
+                      shipmentId: shipment.shipmentId || '',
+                      destination: shipment.destination || '',
+                      cartons: shipment.cartons || 0,
+                      cbm: shipment.cbm || 0,
+                      weight: shipment.weight || 0,
+                      amazonShipmentId: shipment.amazonShipmentId || '',
+                      amazonReference: shipment.amazonReference || '',
+                      giHbl: shipment.giHbl || '',
+                      giQuote: shipment.giQuote || '',
+                      insurance: shipment.insurance || 0
+                  }))
+                : [];
 
             // Remove the 'id' field from the updated order before sending to Firestore
             const { id, ...updatedOrderWithoutId } = updatedOrder;
 
             // Log the data being sent to Firestore
-            console.log("Updating Firestore with order:", {
+            console.log('Updating Firestore with order:', {
                 ...updatedOrderWithoutId,
                 shipments: updatedShipments
             });
@@ -140,9 +142,9 @@ export const OrderService = {
             });
 
             // Add this log to confirm the shipments data is being passed to Firestore
-            console.log("Updated shipments in Firestore:", updatedShipments);
+            console.log('Updated shipments in Firestore:', updatedShipments);
 
-            console.log("Order updated successfully!");
+            console.log('Order updated successfully!');
         } catch (error) {
             console.error('Error updating order:', error);
         }
@@ -187,11 +189,5 @@ export const OrderService = {
             return null;
         }
     }
-
-
-
 };
-
-
-
-
+*/

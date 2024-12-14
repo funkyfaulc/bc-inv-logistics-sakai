@@ -29,7 +29,7 @@ const Reporting = () => {
                 const fetchedOrders = await OrderService.getOrders();
                 setOrders(fetchedOrders);
             } catch (error) {
-                console.error("Error fetching reporting data:", error);
+                console.error('Error fetching reporting data:', error);
                 toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to fetch data', life: 3000 });
             }
         };
@@ -46,7 +46,7 @@ const Reporting = () => {
         const selectedMonth = filterDate.getMonth();
         const selectedYear = filterDate.getFullYear();
 
-        const filteredOrders = orders.filter(order => {
+        const filteredOrders = orders.filter((order) => {
             if (!order.orderDate) return false;
             const orderMonth = order.orderDate.getMonth();
             const orderYear = order.orderDate.getFullYear();
@@ -55,20 +55,20 @@ const Reporting = () => {
 
         const inventoryMap: { [sku: string]: { sku: string; productName: string; totalUnits: number; totalCartons: number } } = {};
 
-        products.forEach(product => {
+        products.forEach((product) => {
             inventoryMap[product.sku || ''] = {
                 sku: product.sku || '',
                 productName: product.product,
                 totalUnits: 0,
-                totalCartons: 0,
+                totalCartons: 0
             };
         });
 
-        filteredOrders.forEach(order => {
+        filteredOrders.forEach((order) => {
             if (order.shipments) {
-                order.shipments.forEach(shipment => {
+                order.shipments.forEach((shipment) => {
                     if (shipment.items) {
-                        shipment.items.forEach(item => {
+                        shipment.items.forEach((item) => {
                             if (inventoryMap[item.sku]) {
                                 inventoryMap[item.sku].totalUnits += item.unitCount;
                                 inventoryMap[item.sku].totalCartons += shipment.cartons; // Assuming cartons are per shipment
@@ -79,7 +79,7 @@ const Reporting = () => {
             }
         });
 
-        const reportArray = Object.values(inventoryMap).filter(item => item.sku !== '');
+        const reportArray = Object.values(inventoryMap).filter((item) => item.sku !== '');
 
         setReportData(reportArray);
     };
@@ -111,7 +111,7 @@ const Reporting = () => {
                     <div className="p-fluid">
                         <div className="p-field">
                             <label htmlFor="month">Select Month</label>
-                            <Calendar id="month" value={filterDate} onChange={(e) => setFilterDate(e.value)} view="month" dateFormat="mm/yy" placeholder="Select a month" />
+                            <Calendar id="month" value={filterDate} onChange={(e) => setFilterDate(e.value || null)} view="month" dateFormat="mm/yy" placeholder="Select a month" />
                         </div>
                     </div>
 

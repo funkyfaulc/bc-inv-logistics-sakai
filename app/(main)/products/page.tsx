@@ -5,14 +5,18 @@ import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { Dialog } from 'primereact/dialog';
 import { InputText } from 'primereact/inputtext';
-import { Dropdown } from 'primereact/dropdown';
+import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState } from 'react';
 import { ProductService } from '../../../demo/services/ProductService';
 import Papa from 'papaparse';
+import { Product as ProductType } from '@/types/products';
 
+interface Product extends ProductType {
+    [key: string]: any;
+}
 
 const Crud = () => {
     const emptyProduct = {
@@ -23,20 +27,20 @@ const Crud = () => {
         size: '',
         asin: '',
         sku: '',
-        upc: '',
+        upc: ''
     };
 
-    const [products, setProducts] = useState(null);
+    const [products, setProducts] = useState<Product[]>([]);
     const [productDialog, setProductDialog] = useState(false);
     const [deleteProductDialog, setDeleteProductDialog] = useState(false);
     const [deleteProductsDialog, setDeleteProductsDialog] = useState(false);
-    const [product, setProduct] = useState(emptyProduct);
-    const [selectedProducts, setSelectedProducts] = useState(null);
+    const [product, setProduct] = useState<Product>(emptyProduct);
+    const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
     const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState('');
-    const [bulkUploadDialog, setBulkUploadDialog] = useState(false);  // Add this for dialog state
+    const [bulkUploadDialog, setBulkUploadDialog] = useState(false); // Add this for dialog state
 
-    const toast = useRef(null);
+    const toast = useRef<Toast>(null);
     const dt = useRef(null);
 
     const productOptions = [
@@ -53,7 +57,7 @@ const Crud = () => {
         { label: 'Silk', value: 'Silk' }
     ];
 
-    const colorOptionsByProduct = {
+    const colorOptionsByProduct: { [key: string]: { label: string; value: string }[] } = {
         'Bed Sheets': [
             { label: 'Black', value: 'Black' },
             { label: 'Coastal Blue', value: 'Coastal Blue' },
@@ -73,7 +77,7 @@ const Crud = () => {
             { label: 'Twilight Blue', value: 'Twilight Blue' },
             { label: 'White', value: 'White' }
         ],
-        'Pillowcase': [
+        Pillowcase: [
             { label: 'Black', value: 'Black' },
             { label: 'Coastal Blue', value: 'Coastal Blue' },
             { label: 'Charcoal Grey', value: 'Charcoal Grey' },
@@ -94,7 +98,7 @@ const Crud = () => {
         ]
     };
 
-    const sizeOptionsByProduct = {
+    const sizeOptionsByProduct: { [key: string]: { label: string; value: string }[] } = {
         'Bed Sheets': [
             { label: 'Queen', value: 'Queen' },
             { label: 'King', value: 'King' },
@@ -103,17 +107,17 @@ const Crud = () => {
             { label: 'Twin', value: 'Twin' },
             { label: 'TwinXL', value: 'TwinXL' },
             { label: 'Full', value: 'Full' },
-            { label: 'Split Top King', value: 'Split Top King' },
+            { label: 'Split Top King', value: 'Split Top King' }
         ],
-        'Pillowcase': [
+        Pillowcase: [
             { label: 'Standard', value: 'Standard' },
             { label: 'Queen', value: 'Queen' },
             { label: 'King', value: 'King' }
         ]
     };
 
-    const [colorOptions, setColorOptions] = useState([]);
-    const [sizeOptions, setSizeOptions] = useState([]);
+    const [colorOptions, setColorOptions] = useState<{ label: string; value: string }[]>([]);
+    const [sizeOptions, setSizeOptions] = useState<{ label: string; value: string }[]>([]);
 
     useEffect(() => {
         ProductService.getProducts().then((data) => setProducts(data));
@@ -130,59 +134,74 @@ const Crud = () => {
         setProductDialog(false);
     };
 
+    const createNewProduct = () => {
+        const newProduct: Product = {
+            id: '', // Temporary ID; will be replaced after saving to Firestore
+            product: ''
+            // other fields...
+        };
+
+        setProduct(newProduct);
+        setProductDialog(true);
+    };
+
     const saveProduct = async () => {
         setSubmitted(true);
-    
+
         if (product.product.trim()) {
             // Fetch all products from Firestore
-            const existingProductsSnapshot = await ProductService.getProducts(); 
-            const existingSKUs = new Set(existingProductsSnapshot.map(p => p.sku));
-            const existingASINs = new Set(existingProductsSnapshot.map(p => p.asin));
-    
-           // Updated to prefer ASIN over SKU
+            const existingProductsSnapshot = await ProductService.getProducts();
+            const existingSKUs = new Set(existingProductsSnapshot.map((p) => p.sku));
+            const existingASINs = new Set(existingProductsSnapshot.map((p) => p.asin));
+
+            // Updated to prefer ASIN over SKU
             if (
-                (product.asin && existingASINs.has(product.asin) && product.id !== existingProductsSnapshot.find(p => p.asin === product.asin).id) ||
-                (existingSKUs.has(product.sku) && product.id !== existingProductsSnapshot.find(p => p.sku === product.sku).id)
+                (product.asin && existingASINs.has(product.asin) && product.id !== existingProductsSnapshot.find((p) => p.asin === product.asin)?.id) ||
+                (existingSKUs.has(product.sku) && product.id !== existingProductsSnapshot.find((p) => p.sku === product.sku)?.id)
             ) {
-                toast.current.show({
-                    severity: 'warn', 
-                    summary: 'Duplicate Found', 
-                    detail: `Cannot Update, Duplicate Found (ASIN: ${product.asin} or SKU: ${product.sku})`, 
-                    life: 4000
-                });
+                if (toast.current) {
+                    toast.current.show({
+                        severity: 'warn',
+                        summary: 'Duplicate Found',
+                        detail: `Cannot Update, Duplicate Found (ASIN: ${product.asin} or SKU: ${product.sku})`,
+                        life: 4000
+                    });
+                }
                 return; // Prevent further execution if duplicate found
             }
-    
+
             let _products = [...products];
             let _product = { ...product };
-    
+
             if (product.id) {
                 const index = findIndexById(product.id);
                 _products[index] = _product;
-                toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
-    
+                if (toast.current) {
+                    toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Product Updated', life: 3000 });
+                }
+
                 // Firestore update product
-                console.log("Updating product in Firestore: ", _product); 
-                await ProductService.updateProduct(product.id, _product); 
+                console.log('Updating product in Firestore: ', _product);
+                await ProductService.updateProduct(product.id, _product);
             } else {
                 _product.id = createId();
                 _products.push(_product);
-                toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Product Created', life: 3000 });
-    
+                if (toast.current) {
+                    toast.current.show({ severity: 'success', summary: 'Successful', detail: 'Product Created', life: 3000 });
+                }
+
                 // Firestore add product
-                console.log("Adding product to Firestore: ", _product); 
-                await ProductService.addProduct(_product); 
+                console.log('Adding product to Firestore: ', _product);
+                await ProductService.addProduct(_product);
             }
-    
+
             setProducts(_products);
             setProductDialog(false);
             setProduct(emptyProduct);
         }
     };
-    
-    
 
-    const onProductChange = (e) => {
+    const onProductChange = (e: { value: string }) => {
         const selectedProduct = e.value;
         let updatedProduct = { ...product, product: selectedProduct, color: '' };
         // Default to Bamboo for Bed Sheets
@@ -194,15 +213,15 @@ const Crud = () => {
         setColorOptions(colorOptionsByProduct[selectedProduct] || []);
         setSizeOptions(sizeOptionsByProduct[selectedProduct] || []);
     };
-
-    const onInputChange = (e, name) => {
-        const val = (e.target && e.target.value) || '';
+    
+        const onInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | DropdownChangeEvent, name: keyof Product) => {
+        const val = (e as DropdownChangeEvent).value || (e.target as HTMLInputElement).value || '';
         let _product = { ...product };
-        _product[`${name}`] = val;
+        _product[name] = val as any;
         setProduct(_product);
     };
 
-    const findIndexById = (id) => {
+    const findIndexById = (id: string) => {
         let index = -1;
         for (let i = 0; i < products.length; i++) {
             if (products[i].id === id) {
@@ -222,7 +241,7 @@ const Crud = () => {
         return id;
     };
 
-    const confirmDeleteProduct = (product) => {
+    const confirmDeleteProduct = (product: Product) => {
         setProduct(product);
         setDeleteProductDialog(true);
     };
@@ -232,43 +251,49 @@ const Crud = () => {
         try {
             // Remove the product from Firestore first
             await ProductService.deleteProduct(product.id);
-    
+
             // Then remove it from the local state
             let _products = products.filter((val) => val.id !== product.id);
             setProducts(_products);
             setDeleteProductDialog(false);
             setProduct(emptyProduct);
-            toast.current.show({ severity: 'success', summary: 'Successful', detail: '1 Product Deleted', life: 3000 });
+            if (toast.current) {
+                toast.current.show({ severity: 'success', summary: 'Successful', detail: '1 Product Deleted', life: 3000 });
+            }
         } catch (error) {
             console.error('Error deleting product:', error);
-            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete product', life: 3000 });
+            if (toast.current) {
+                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete product', life: 3000 });
+            }
         }
     };
-    
+
     //Bulk Delete
     const deleteSelectedProducts = async () => {
         try {
             // Remove products from Firestore first
             for (const selectedProduct of selectedProducts) {
-                await ProductService.deleteProduct(selectedProduct.id);  // Ensure each selected product is deleted from Firestore
+                await ProductService.deleteProduct(selectedProduct.id); // Ensure each selected product is deleted from Firestore
             }
-    
+
             // Then remove the products from the local state
             let _products = products.filter((val) => !selectedProducts.includes(val));
-            const deletedCount = selectedProducts.length;  // Count how many products were deleted
+            const deletedCount = selectedProducts.length; // Count how many products were deleted
             setProducts(_products);
             setDeleteProductsDialog(false);
-            setSelectedProducts(null);
-            toast.current.show({ severity: 'success', summary: 'Successful', detail: `${deletedCount} Products Deleted`, life: 3000 });
+            setSelectedProducts([]);
+            if (toast.current) {
+                toast.current.show({ severity: 'success', summary: 'Successful', detail: `${deletedCount} Products Deleted`, life: 3000 });
+            }
         } catch (error) {
             console.error('Error deleting products:', error);
-            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete products', life: 3000 });
+            if (toast.current) {
+                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete products', life: 3000 });
+            }
         }
     };
-    
 
-    const editProduct = (product) => {
-        
+    const editProduct = (product: Product) => {
         // Set the product, color ,and size dropdown options based on the product type
         setProduct({ ...product });
         setColorOptions(colorOptionsByProduct[product.product] || []);
@@ -276,43 +301,47 @@ const Crud = () => {
         setProductDialog(true);
     };
 
-    const handleFileUpload = (e) => {
-        const file = e.target.files[0];
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) {
+            return;
+        }
+        const file = files[0];
         Papa.parse(file, {
             header: true,
             complete: async (results) => {
                 let data = results.data;
-    
+
                 // Convert the headers to lowercase
-                data = data.map((product) => {
-                    const normalizedProduct = {};
+                data = data.map((product: any) => {
+                    const normalizedProduct: { [key: string]: any } = {};
                     for (const key in product) {
-                        normalizedProduct[key.toLowerCase()] = product[key];  // Convert keys to lowercase
+                        normalizedProduct[key.toLowerCase()] = product[key]; // Convert keys to lowercase
                     }
                     return normalizedProduct;
                 });
-    
-                console.log("Parsed and normalized CSV data:", data);
-                await bulkUploadProducts(data);
+
+                console.log('Parsed and normalized CSV data:', data);
+                await bulkUploadProducts(data as Product[]);
             },
             error: (err) => {
-                console.error("Error parsing CSV:", err);
+                console.error('Error parsing CSV:', err);
             }
         });
     };
-    
+
     //Bulk Upload Products Functionality
-    const bulkUploadProducts = async (products) => {
+    const bulkUploadProducts = async (products: Product[]) => {
         let totalAdded = 0; // Keep track of successfully added products
         let errors = []; // Keep track of errors (e.g., missing required fields, duplicates)
-    
+
         try {
             const existingProductsSnapshot = await ProductService.getProducts(); // Fetch all products from Firestore
-            const existingSKUs = new Set(existingProductsSnapshot.map(product => product.sku)); // Collect existing SKUs
-            const existingASINs = new Set(existingProductsSnapshot.map(product => product.asin)); // Collect existing ASINs
-    
+            const existingSKUs = new Set(existingProductsSnapshot.map((product) => product.sku)); // Collect existing SKUs
+            const existingASINs = new Set(existingProductsSnapshot.map((product) => product.asin)); // Collect existing ASINs
+
             for (const product of products) {
-               // Updated to prioritize ASIN for duplicate checking
+                // Updated to prioritize ASIN for duplicate checking
                 if (product.asin && existingASINs.has(product.asin)) {
                     errors.push(`Duplicate found (ASIN: ${product.asin})`);
                     continue; // Skip this product
@@ -320,44 +349,44 @@ const Crud = () => {
                     errors.push(`Duplicate found (SKU: ${product.sku || 'N/A'})`);
                     continue; // Skip this product
                 }
-    
+
                 // Validate required fields
                 if (!product.product || !product.size) {
                     errors.push(`Missing required fields for SKU: ${product.sku || 'N/A'}`);
                     continue; // Skip this product
                 }
-    
+
                 // Add product to Firestore
-                console.log("Adding product:", product);
+                console.log('Adding product:', product);
                 await ProductService.addProduct(product);
                 totalAdded++; // Increment successfully added products
             }
-    
-            toast.current.show({ severity: 'success', summary: 'Upload Successful', detail: `${totalAdded} products added`, life: 3000 });
-    
+
+            if (toast.current) {
+                toast.current.show({ severity: 'success', summary: 'Upload Successful', detail: `${totalAdded} products added`, life: 3000 });
+            }
+
             // If there were errors, display them
             if (errors.length > 0) {
-                toast.current.show({ severity: 'warn', summary: 'Upload Warnings', detail: `Some products were skipped: ${errors.join(', ')}`, life: 5000 });
+                if (toast.current) {
+                    toast.current.show({ severity: 'warn', summary: 'Upload Warnings', detail: `Some products were skipped: ${errors.join(', ')}`, life: 5000 });
+                }
             }
-    
+
             // Refetch products to refresh the list and show total count
             const updatedProducts = await ProductService.getProducts();
             setProducts(updatedProducts); // Update the state with new product list
-            console.log("Total products in the database:", updatedProducts.length);
-    
+            console.log('Total products in the database:', updatedProducts.length);
         } catch (error) {
             console.error('Error in bulk upload:', error);
-            toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to upload products', life: 3000 });
+            if (toast.current) {
+                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to upload products', life: 3000 });
+            }
         }
     };
-    
-    
-    
+
     const openBulkUpload = () => setBulkUploadDialog(true); // Function for opening bulk upload dialog
     const hideBulkUploadDialog = () => setBulkUploadDialog(false); // Function for closing bulk upload dialog
-    
-
-
 
     const leftToolbarTemplate = () => {
         return (
@@ -379,12 +408,11 @@ const Crud = () => {
         </div>
     );
 
-    const actionBodyTemplate = (rowData) => {
+    const actionBodyTemplate = (rowData: Product) => {
         return (
             <React.Fragment>
                 <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => editProduct(rowData)} />
                 <Button icon="pi pi-trash" className="p-button-rounded p-button-warning" onClick={() => confirmDeleteProduct(rowData)} />
-                    
             </React.Fragment>
         );
     };
@@ -431,6 +459,7 @@ const Crud = () => {
                         emptyMessage="No products found."
                         header={header}
                         responsiveLayout="scroll"
+                        selectionMode={'multiple'}
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
                         <Column field="product" header="Product" sortable></Column>
@@ -446,14 +475,7 @@ const Crud = () => {
                     <Dialog visible={productDialog} style={{ width: '450px' }} header="Product Details" modal className="p-fluid" footer={productDialogFooter} onHide={hideDialog}>
                         <div className="field">
                             <label htmlFor="product">Product</label>
-                            <Dropdown
-                                id="product"
-                                value={product.product}
-                                options={productOptions}
-                                onChange={onProductChange}
-                                placeholder="Select a Product"
-                                className={classNames({ 'p-invalid': submitted && !product.product })}
-                            />
+                            <Dropdown id="product" value={product.product} options={productOptions} onChange={onProductChange} placeholder="Select a Product" className={classNames({ 'p-invalid': submitted && !product.product })} />
                             {submitted && !product.product && <small className="p-invalid">Product is required.</small>}
                         </div>
 
@@ -474,27 +496,13 @@ const Crud = () => {
 
                         <div className="field">
                             <label htmlFor="color">Color</label>
-                            <Dropdown
-                                id="color"
-                                value={product.color}
-                                options={colorOptions}
-                                onChange={(e) => onInputChange(e, 'color')}
-                                placeholder="Select a Color"
-                                className={classNames({ 'p-invalid': submitted && !product.color })}
-                            />
+                            <Dropdown id="color" value={product.color} options={colorOptions} onChange={(e) => onInputChange(e, 'color')} placeholder="Select a Color" className={classNames({ 'p-invalid': submitted && !product.color })} />
                             {submitted && !product.color && <small className="p-invalid">Color is required.</small>}
                         </div>
 
                         <div className="field">
                             <label htmlFor="size">Size</label>
-                            <Dropdown
-                                id="size"
-                                value={product.size}
-                                options={sizeOptions}
-                                onChange={(e) => onInputChange(e, 'size')}
-                                placeholder="Select a Size"
-                                className={classNames({ 'p-invalid': submitted && !product.size })}
-                            />
+                            <Dropdown id="size" value={product.size} options={sizeOptions} onChange={(e) => onInputChange(e, 'size')} placeholder="Select a Size" className={classNames({ 'p-invalid': submitted && !product.size })} />
                             {submitted && !product.size && <small className="p-invalid">Size is required.</small>}
                         </div>
 

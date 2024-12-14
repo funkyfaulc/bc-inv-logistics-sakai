@@ -21,7 +21,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
     return (
         <div className="layout-topbar">
             <Link href="/" className="layout-topbar-logo">
-            <img src="/layout/images/bc-logo-square.png" alt="Bella Coterie Logo" width="350px" height="350px" />
+                <img src="/layout/images/bc-logo-square.png" alt="Bella Coterie Logo" width="350px" height="350px" />
                 <span style={{ marginLeft: '10px', fontWeight: 'bold', fontSize: '1.2em' }}>Bella Coterie</span>
             </Link>
 

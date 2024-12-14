@@ -45,8 +45,8 @@ const OrderDetails = () => {
         insurance: 0,
         items: [],
         boats: '',
-        departureDate: null,
-        arrivalDate: null,
+        departureDate: null as Date | null,
+        arrivalDate: null as Date | null
     });
 
     const [products, setProducts] = useState<Product[]>([]); // State to hold products
@@ -58,9 +58,9 @@ const OrderDetails = () => {
         if (id) {
             OrderService.getOrderById(id).then((data) => {
                 if (data && data.shipments) {
-                    const updatedShipments = data.shipments.map(shipment => ({
+                    const updatedShipments = data.shipments.map((shipment) => ({
                         ...shipment,
-                        boats: shipment.boats || '', // Ensure boats is a string
+                        boats: shipment.boats || '' // Ensure boats is a string
                     }));
                     setOrder({ ...data, shipments: updatedShipments });
                 } else {
@@ -104,7 +104,7 @@ const OrderDetails = () => {
             items: [],
             boats: '',
             departureDate: null,
-            arrivalDate: null,
+            arrivalDate: null
         });
         setIsShipmentDialogVisible(true);
     };
@@ -179,7 +179,7 @@ const OrderDetails = () => {
                 items: [],
                 boats: '',
                 departureDate: null,
-                arrivalDate: null,
+                arrivalDate: null
             });
 
             setIsShipmentDialogVisible(false);
@@ -200,15 +200,13 @@ const OrderDetails = () => {
         { status: 'Arrived at Destination', date: order.arrivePortDate, icon: 'pi pi-map-marker', color: '#ff5733' },
         { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate, icon: 'pi pi-box', color: '#6610f2' },
         { status: 'Available in Amazon', date: order.availableInAmazonDate, icon: 'pi pi-check-circle', color: '#28a745' },
-        { status: 'Coverage End', date: order.coverageDate, icon: 'pi pi-calendar-times', color: '#dc3545' },
+        { status: 'Coverage End', date: order.coverageDate, icon: 'pi pi-calendar-times', color: '#dc3545' }
     ];
 
     const today = new Date();
     const todayMarker = { status: 'Today', date: today.toLocaleDateString(), icon: 'pi pi-calendar', color: 'red', today: true };
 
-    const filteredEvents = [...events.filter(event => event.date !== null), todayMarker].sort(
-        (a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime()
-    );
+    const filteredEvents = [...events.filter((event) => event.date !== null), todayMarker].sort((a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime());
 
     return (
         <div className="grid order-details-page">
@@ -234,15 +232,33 @@ const OrderDetails = () => {
                         {order.shipments.map((shipment, index) => (
                             <AccordionTab key={index} header={`Shipment ${index + 1} - ${shipment.shipmentId}`}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                                    <p><strong>AZ Shipment ID:</strong> {shipment.amazonShipmentId}</p>
-                                    <p><strong>AZ Reference #:</strong> {shipment.amazonReference}</p>
-                                    <p><strong>Cartons:</strong> {shipment.cartons}</p>
-                                    <p><strong>CBM:</strong> {shipment.cbm}</p>
-                                    <p><strong>Weight:</strong> {shipment.weight} KG</p>
-                                    <p><strong>Guided Imports HBL:</strong> {shipment.giHbl}</p>
-                                    <p><strong>Guided Imports Quote:</strong> {shipment.giQuote}</p>
-                                    <p><strong>Insurance:</strong> ${shipment.insurance}</p>
-                                    <p><strong>Boats:</strong> {shipment.boats || 'N/A'}</p>
+                                    <p>
+                                        <strong>AZ Shipment ID:</strong> {shipment.amazonShipmentId}
+                                    </p>
+                                    <p>
+                                        <strong>AZ Reference #:</strong> {shipment.amazonReference}
+                                    </p>
+                                    <p>
+                                        <strong>Cartons:</strong> {shipment.cartons}
+                                    </p>
+                                    <p>
+                                        <strong>CBM:</strong> {shipment.cbm}
+                                    </p>
+                                    <p>
+                                        <strong>Weight:</strong> {shipment.weight} KG
+                                    </p>
+                                    <p>
+                                        <strong>Guided Imports HBL:</strong> {shipment.giHbl}
+                                    </p>
+                                    <p>
+                                        <strong>Guided Imports Quote:</strong> {shipment.giQuote}
+                                    </p>
+                                    <p>
+                                        <strong>Insurance:</strong> ${shipment.insurance}
+                                    </p>
+                                    <p>
+                                        <strong>Boats:</strong> {shipment.boats || 'N/A'}
+                                    </p>
                                     <Button label="Edit Shipment" icon="pi pi-pencil" onClick={() => openEditShipment(shipment, index)} />
                                 </div>
 
@@ -270,19 +286,15 @@ const OrderDetails = () => {
             {/* Order Timeline Section */}
             <div className="col-12">
                 <Card title="Order Timeline">
-                    <Timeline 
-                        value={filteredEvents} 
-                        align="alternate" 
+                    <Timeline
+                        value={filteredEvents}
+                        align="alternate"
                         className="customized-timeline"
-                        marker={(item) => (
-                            <i 
-                                className={item.icon} 
-                                style={{ fontSize: '1.5em', color: item.color }} 
-                            ></i>
-                        )}
+                        marker={(item) => <i className={item.icon} style={{ fontSize: '1.5em', color: item.color }}></i>}
                         content={(item) => (
                             <p>
-                                <strong>{item.status}</strong><br />
+                                <strong>{item.status}</strong>
+                                <br />
                                 {typeof item.date === 'string' ? item.date : item.date ? item.date.toLocaleDateString() : 'N/A'}
                             </p>
                         )}
@@ -291,14 +303,7 @@ const OrderDetails = () => {
             </div>
 
             {/* Order Edit Modal */}
-            <OrderEditModal
-                order={order}
-                setOrder={setOrder}
-                visible={isEditModalVisible}
-                onHide={closeEditModal}
-                onSave={saveOrder}
-                submitted={submitted}
-            />
+            <OrderEditModal order={order} setOrder={setOrder} visible={isEditModalVisible} onHide={closeEditModal} onSave={saveOrder} submitted={submitted} />
 
             {/* Shipment Dialog */}
             <Dialog
@@ -308,143 +313,92 @@ const OrderDetails = () => {
                 visible={isShipmentDialogVisible}
                 onHide={closeShipmentDialog}
                 style={{ width: '600px' }} // Increased width to accommodate items
-            > 
+            >
                 {/* Shipment Details */}
                 <div className="field">
                     <label htmlFor="shipmentId">Shipment ID</label>
-                    <InputText 
-                        id="shipmentId" 
-                        value={newShipment.shipmentId} 
-                        onChange={(e) => setNewShipment({ ...newShipment, shipmentId: e.target.value })} 
-                        required 
-                    />
+                    <InputText id="shipmentId" value={newShipment.shipmentId} onChange={(e) => setNewShipment({ ...newShipment, shipmentId: e.target.value })} required />
                 </div>
                 <div className="field">
                     <label htmlFor="amazonShipmentId">AZ Shipment ID</label>
-                    <InputText 
-                        id="amazonShipmentId" 
-                        value={newShipment.amazonShipmentId} 
-                        onChange={(e) => setNewShipment({ ...newShipment, amazonShipmentId: e.target.value })} 
-                        required 
-                        style={{ width: '250px' }}
-                    />
+                    <InputText id="amazonShipmentId" value={newShipment.amazonShipmentId} onChange={(e) => setNewShipment({ ...newShipment, amazonShipmentId: e.target.value })} required style={{ width: '250px' }} />
                 </div>
                 <div className="field">
                     <label htmlFor="amazonReference">AZ Reference #</label>
-                    <InputText 
-                        id="amazonReference" 
-                        value={newShipment.amazonReference} 
-                        onChange={(e) => setNewShipment({ ...newShipment, amazonReference: e.target.value })} 
-                        required 
-                    />
+                    <InputText id="amazonReference" value={newShipment.amazonReference} onChange={(e) => setNewShipment({ ...newShipment, amazonReference: e.target.value })} required />
                 </div>
                 <div className="field">
                     <label htmlFor="destination">Destination</label>
-                    <InputText 
-                        id="destination" 
-                        value={newShipment.destination} 
-                        onChange={(e) => setNewShipment({ ...newShipment, destination: e.target.value })} 
-                        required 
-                    />
+                    <InputText id="destination" value={newShipment.destination} onChange={(e) => setNewShipment({ ...newShipment, destination: e.target.value })} required />
                 </div>
                 <div className="field">
                     <label htmlFor="cartons">Cartons</label>
-                    <InputText 
-                        id="cartons" 
-                        value={newShipment.cartons} 
+                    <InputText
+                        id="cartons"
+                        value={newShipment.cartons.toString()}
                         onChange={(e) => {
                             const value = parseInt(e.target.value, 10);
                             if (!isNaN(value)) {
                                 setNewShipment({ ...newShipment, cartons: value });
                             }
-                        }} 
-                        required 
+                        }}
+                        required
                     />
                 </div>
                 <div className="field">
                     <label htmlFor="cbm">CBM</label>
-                    <InputText 
-                        id="cbm" 
-                        value={newShipment.cbm} 
+                    <InputText
+                        id="cbm"
+                        value={newShipment.cbm.toString()}
                         onChange={(e) => {
                             const value = parseFloat(e.target.value);
                             if (!isNaN(value)) {
                                 setNewShipment({ ...newShipment, cbm: value });
                             }
-                        }} 
-                        required 
+                        }}
+                        required
                     />
                 </div>
                 <div className="field">
                     <label htmlFor="weight">Weight (KG)</label>
-                    <InputText 
-                        id="weight" 
-                        value={newShipment.weight} 
+                    <InputText
+                        id="weight"
+                        value={newShipment.weight.toString()}
                         onChange={(e) => {
                             const value = parseFloat(e.target.value);
                             if (!isNaN(value)) {
                                 setNewShipment({ ...newShipment, weight: value });
                             }
-                        }} 
-                        required 
+                        }}
+                        required
                     />
                 </div>
 
                 {/* Fields for Gi HBL and Gi Quote */}
                 <div className="field">
                     <label htmlFor="giHbl">Guided Imports HBL</label>
-                    <InputText
-                        id="giHbl"
-                        value={newShipment.giHbl}
-                        onChange={(e) => setNewShipment({ ...newShipment, giHbl: e.target.value })}
-                        required
-                    />
+                    <InputText id="giHbl" value={newShipment.giHbl} onChange={(e) => setNewShipment({ ...newShipment, giHbl: e.target.value })} required />
                 </div>
                 <div className="field">
                     <label htmlFor="giQuote">Guided Imports Quote</label>
-                    <InputText
-                        id="giQuote"
-                        value={newShipment.giQuote}
-                        onChange={(e) => setNewShipment({ ...newShipment, giQuote: e.target.value })}
-                        required
-                    />
+                    <InputText id="giQuote" value={newShipment.giQuote} onChange={(e) => setNewShipment({ ...newShipment, giQuote: e.target.value })} required />
                 </div>
-                
+
                 {/* Boat Name Field */}
                 <div className="field">
                     <label htmlFor="boats">Boat Name</label>
-                    <InputText
-                        id="boats"
-                        value={newShipment.boats}
-                        onChange={(e) => setNewShipment({ ...newShipment, boats: e.target.value })}
-                        placeholder="Enter Boat Name"
-                        required
-                    />
-                </div>        
+                    <InputText id="boats" value={newShipment.boats} onChange={(e) => setNewShipment({ ...newShipment, boats: e.target.value })} placeholder="Enter Boat Name" required />
+                </div>
 
                 {/* Departure and Arrival Dates */}
                 <div className="field">
                     <label htmlFor="departureDate">Departure Date</label>
-                    <Calendar
-                        id="departureDate"
-                        value={newShipment.departureDate}
-                        onChange={(e) => setNewShipment({ ...newShipment, departureDate: e.value })}
-                        showIcon
-                        dateFormat="mm/dd/yy"
-                        required
-                    />
+                    <Calendar id="departureDate" value={newShipment.departureDate} onChange={(e) => setNewShipment({ ...newShipment, departureDate: e.value || null })} showIcon dateFormat="mm/dd/yy" required />
                 </div>
                 <div className="field">
                     <label htmlFor="arrivalDate">Arrival Date</label>
-                    <Calendar
-                        id="arrivalDate"
-                        value={newShipment.arrivalDate}
-                        onChange={(e) => setNewShipment({ ...newShipment, arrivalDate: e.value })}
-                        showIcon
-                        dateFormat="mm/dd/yy"
-                        required
-                    />
-                </div>                
+                    <Calendar id="arrivalDate" value={newShipment.arrivalDate} onChange={(e) => setNewShipment({ ...newShipment, arrivalDate: e.value || null })} showIcon dateFormat="mm/dd/yy" required />
+                </div>
 
                 {/* Items Section */}
                 <div className="field">
@@ -456,7 +410,7 @@ const OrderDetails = () => {
                                 <Dropdown
                                     id={`sku-${index}`}
                                     value={item.sku}
-                                    options={products.map(p => ({ label: p.sku, value: p.sku }))}
+                                    options={products.map((p) => ({ label: p.sku, value: p.sku }))}
                                     onChange={(e) => {
                                         const updatedItems = [...newShipment.items];
                                         updatedItems[index].sku = e.value as string;
@@ -471,7 +425,7 @@ const OrderDetails = () => {
                                 <InputText
                                     id={`unitCount-${index}`}
                                     type="number"
-                                    value={item.unitCount}
+                                    value={item.unitCount.toString()} // Convert number to string
                                     onChange={(e) => {
                                         const value = parseInt(e.target.value, 10);
                                         if (!isNaN(value)) {
@@ -479,34 +433,34 @@ const OrderDetails = () => {
                                             updatedItems[index].unitCount = value;
                                             setNewShipment({ ...newShipment, items: updatedItems });
                                         }
-                                    }} 
+                                    }}
                                     placeholder="Enter Unit Count"
                                     required
                                 />
                             </div>
                             <div className="p-col-2">
-                                <Button 
-                                    label="Remove" 
-                                    icon="pi pi-times" 
-                                    className="p-button-danger p-mt-4" 
+                                <Button
+                                    label="Remove"
+                                    icon="pi pi-times"
+                                    className="p-button-danger p-mt-4"
                                     onClick={() => {
                                         const updatedItems = newShipment.items.filter((_, i) => i !== index);
                                         setNewShipment({ ...newShipment, items: updatedItems });
-                                    }} 
+                                    }}
                                 />
                             </div>
                         </div>
                     ))}
-                    <Button 
-                        label="Add Item" 
-                        icon="pi pi-plus" 
+                    <Button
+                        label="Add Item"
+                        icon="pi pi-plus"
                         onClick={() => {
                             setNewShipment({
                                 ...newShipment,
-                                items: [...newShipment.items, { sku: '', unitCount: 0 }],
+                                items: [...newShipment.items, { sku: '', unitCount: 0 }]
                             });
-                        }} 
-                        className="p-mt-2" 
+                        }}
+                        className="p-mt-2"
                     />
                 </div>
 
@@ -517,7 +471,6 @@ const OrderDetails = () => {
             </Dialog>
         </div>
     );
-
 };
 
 export default OrderDetails;

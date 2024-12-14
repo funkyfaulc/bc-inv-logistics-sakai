@@ -1,31 +1,13 @@
 // demo/services/OrderService.tsx
 
-import { 
-    collection, 
-    getDocs, 
-    addDoc, 
-    updateDoc, 
-    deleteDoc, 
-    doc, 
-    serverTimestamp, 
-    Timestamp, 
-    getDoc 
-} from 'firebase/firestore';
-import { db } from '../../app/firebase';  // Adjust this path if necessary
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp, getDoc } from 'firebase/firestore';
+import { db } from '../../app/firebase'; // Adjust this path if necessary
 
 // Import your custom interfaces from the centralized types
-import { 
-    Order, 
-    Shipment, 
-    ShipmentItem, 
-    OrderFirestore, 
-    ShipmentFirestore, 
-    ShipmentItemFirestore 
-} from 'types/orders';
+import { Order, Shipment, ShipmentItem, OrderFirestore, ShipmentFirestore, ShipmentItemFirestore } from 'types/orders';
 
 // Firestore collection reference for orders
 const orderCollection = collection(db, 'orders');
-
 
 // Helper function to map Frontend Order to Firestore Order
 // demo/services/OrderService.tsx
@@ -46,25 +28,27 @@ const mapFirestoreOrderToOrder = (firestoreOrder: OrderFirestore, id: string): O
         contract: firestoreOrder.contract || '',
         deposit: typeof firestoreOrder.deposit === 'number' ? firestoreOrder.deposit : parseFloat(firestoreOrder.deposit) || 0,
         totalCost: typeof firestoreOrder.totalCost === 'number' ? firestoreOrder.totalCost : parseFloat(firestoreOrder.totalCost) || 0,
-        shipments: Array.isArray(firestoreOrder.shipments) ? firestoreOrder.shipments.map(shipment => ({
-            shipmentId: shipment.shipmentId,
-            destination: shipment.destination,
-            cartons: shipment.cartons,
-            cbm: shipment.cbm,
-            weight: shipment.weight,
-            amazonShipmentId: shipment.amazonShipmentId,
-            amazonReference: shipment.amazonReference,
-            giHbl: shipment.giHbl,
-            giQuote: shipment.giQuote,
-            insurance: shipment.insurance,
-            items: shipment.items.map(item => ({
-                sku: item.sku,
-                unitCount: item.unitCount,
-            })),
-            boats: shipment.boats || '',
-            departureDate: shipment.departureDate ? shipment.departureDate.toDate() : null,
-            arrivalDate: shipment.arrivalDate ? shipment.arrivalDate.toDate() : null,
-        })) : []
+        shipments: Array.isArray(firestoreOrder.shipments)
+            ? firestoreOrder.shipments.map((shipment) => ({
+                  shipmentId: shipment.shipmentId,
+                  destination: shipment.destination,
+                  cartons: shipment.cartons,
+                  cbm: shipment.cbm,
+                  weight: shipment.weight,
+                  amazonShipmentId: shipment.amazonShipmentId,
+                  amazonReference: shipment.amazonReference,
+                  giHbl: shipment.giHbl,
+                  giQuote: shipment.giQuote,
+                  insurance: shipment.insurance,
+                  items: shipment.items.map((item) => ({
+                      sku: item.sku,
+                      unitCount: item.unitCount
+                  })),
+                  boats: shipment.boats || '',
+                  departureDate: shipment.departureDate ? shipment.departureDate.toDate() : null,
+                  arrivalDate: shipment.arrivalDate ? shipment.arrivalDate.toDate() : null
+              }))
+            : []
     };
 };
 
@@ -85,34 +69,35 @@ const mapOrderToFirestore = (order: Order): OrderFirestore => {
         totalCost: order.totalCost ?? 0,
         created_at: serverTimestamp() as Timestamp,
         updated_at: serverTimestamp() as Timestamp,
-        shipments: order.shipments ? order.shipments.map(shipment => ({
-            shipmentId: shipment.shipmentId,
-            destination: shipment.destination,
-            cartons: shipment.cartons,
-            cbm: shipment.cbm,
-            weight: shipment.weight,
-            amazonShipmentId: shipment.amazonShipmentId,
-            amazonReference: shipment.amazonReference,
-            giHbl: shipment.giHbl,
-            giQuote: shipment.giQuote,
-            insurance: shipment.insurance,
-            items: shipment.items.map(item => ({
-                sku: item.sku,
-                unitCount: item.unitCount
-            })),
-            boats: shipment.boats || '',
-            departureDate: shipment.departureDate ? Timestamp.fromDate(shipment.departureDate) : null,
-            arrivalDate: shipment.arrivalDate ? Timestamp.fromDate(shipment.arrivalDate) : null,
-        })) : []
+        shipments: order.shipments
+            ? order.shipments.map((shipment) => ({
+                  shipmentId: shipment.shipmentId,
+                  destination: shipment.destination,
+                  cartons: shipment.cartons,
+                  cbm: shipment.cbm,
+                  weight: shipment.weight,
+                  amazonShipmentId: shipment.amazonShipmentId,
+                  amazonReference: shipment.amazonReference,
+                  giHbl: shipment.giHbl,
+                  giQuote: shipment.giQuote,
+                  insurance: shipment.insurance,
+                  items: shipment.items.map((item) => ({
+                      sku: item.sku,
+                      unitCount: item.unitCount
+                  })),
+                  boats: shipment.boats || '',
+                  departureDate: shipment.departureDate ? Timestamp.fromDate(shipment.departureDate) : null,
+                  arrivalDate: shipment.arrivalDate ? Timestamp.fromDate(shipment.arrivalDate) : null
+              }))
+            : []
     };
 };
-
 
 export const OrderService = {
     // Fetch all orders from Firestore and convert Timestamps to JavaScript Date objects
     async getOrders(): Promise<Order[]> {
         const snapshot = await getDocs(orderCollection);
-        return snapshot.docs.map(doc => {
+        return snapshot.docs.map((doc) => {
             const data = doc.data() as OrderFirestore; // Type assertion
             return mapFirestoreOrderToOrder(data, doc.id);
         });
@@ -121,11 +106,11 @@ export const OrderService = {
     // Add a new order to Firestore
     async addOrder(order: Order): Promise<void> {
         try {
-            console.log("Attempting to add order:", order);
+            console.log('Attempting to add order:', order);
 
             // Check for duplicate orderId
             const existingOrdersSnapshot = await getDocs(orderCollection);
-            const existingOrderIds = existingOrdersSnapshot.docs.map(doc => doc.data().orderId);
+            const existingOrderIds = existingOrdersSnapshot.docs.map((doc) => doc.data().orderId);
 
             if (existingOrderIds.includes(order.orderId)) {
                 throw new Error(`Order with orderId: ${order.orderId} already exists.`);
@@ -133,11 +118,11 @@ export const OrderService = {
 
             // Remove the 'id' field from the order object before adding to Firestore
             const { id, ...orderDataWithoutId } = order;
-            
+
             const firestoreOrder = mapOrderToFirestore(orderDataWithoutId);
 
             await addDoc(orderCollection, firestoreOrder);
-            console.log("Order added successfully!");
+            console.log('Order added successfully!');
         } catch (error) {
             console.error('Error adding order:', error);
         }
@@ -155,14 +140,14 @@ export const OrderService = {
             const firestoreOrder = mapOrderToFirestore(updatedOrderWithoutId);
 
             // Log the data being sent to Firestore
-            console.log("Updating Firestore with order:", firestoreOrder);
+            console.log('Updating Firestore with order:', firestoreOrder);
 
-            await updateDoc(orderDoc, firestoreOrder);
+            await updateDoc(orderDoc, { ...firestoreOrder });
 
             // Log the updated shipments
-            console.log("Updated order in Firestore:", firestoreOrder);
+            console.log('Updated order in Firestore:', firestoreOrder);
 
-            console.log("Order updated successfully!");
+            console.log('Order updated successfully!');
         } catch (error) {
             console.error('Error updating order:', error);
         }

@@ -4,7 +4,7 @@ import React from 'react'; // Add this line to import React
 import { Order, Shipment, ShipmentItem, EventItem } from './orders';
 
 // Existing imports
-import { 
+import {
     Page,
     AppBreadcrumbProps,
     Breadcrumb,
@@ -29,17 +29,7 @@ import {
     AppMenuItem
 } from './layout';
 
-import { 
-    Demo, 
-    LayoutType, 
-    SortOrderType, 
-    CustomEvent, 
-    ChartDataState, 
-    ChartOptionsState, 
-    AppMailSidebarItem, 
-    AppMailReplyProps, 
-    AppMailProps 
-} from './demo';
+import { Demo, LayoutType, SortOrderType, CustomEvent, ChartDataState, ChartOptionsState, AppMailSidebarItem, AppMailReplyProps, AppMailProps } from './demo';
 
 type ChildContainerProps = {
     children: React.ReactNode;

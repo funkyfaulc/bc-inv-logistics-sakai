@@ -15,7 +15,7 @@ const AppMenu = () => {
             label: 'Home',
             items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }]
         },
-        
+
         /*
         {
             label: 'UI Components',
@@ -99,8 +99,7 @@ const AppMenu = () => {
                     label: 'EOM Inventory',
                     icon: 'pi pi-fw pi-chart-line',
                     to: '/reporting/'
-                },
-
+                }
 
                 /*
                 {
@@ -121,7 +120,7 @@ const AppMenu = () => {
                     to: '/pages/empty'
                 }*/
             ]
-        },
+        }
 
         /*
         {

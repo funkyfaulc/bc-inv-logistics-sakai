@@ -1,5 +1,5 @@
 // /app/(full-page)/layout.tsx
-'use client';  
+'use client';
 
 import AppConfig from '../../layout/AppConfig';
 import React from 'react';

@@ -3,7 +3,7 @@
 import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
 
 export interface Product {
-    id?: string; // Firestore document ID
+    id: string; // Firestore document ID
     product: string;
     material?: string;
     color?: string;

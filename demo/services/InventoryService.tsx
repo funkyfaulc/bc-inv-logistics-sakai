@@ -13,7 +13,7 @@ export const InventoryService = {
         try {
             await addDoc(inventoryCollection, {
                 ...inventoryUpdate,
-                timestamp: Timestamp.now(), // Store timestamp of when the inventory was updated
+                timestamp: Timestamp.now() // Store timestamp of when the inventory was updated
             });
             console.log('Inventory update added successfully!');
         } catch (error) {
@@ -24,9 +24,12 @@ export const InventoryService = {
     // Fetch all inventory updates
     async getInventoryUpdates(): Promise<InventoryUpdate[]> {
         const snapshot = await getDocs(inventoryCollection);
-        return snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-        } as InventoryUpdate));
-    },
+        return snapshot.docs.map(
+            (doc) =>
+                ({
+                    id: doc.id,
+                    ...doc.data()
+                } as InventoryUpdate)
+        );
+    }
 };

@@ -110,7 +110,7 @@ const Dashboard = () => {
         ProductService.getProductsSmall().then((data) => setProducts(data));
     }, []);
     */
-   
+
     useEffect(() => {
         if (layoutConfig.colorScheme === 'light') {
             applyLightTheme();
