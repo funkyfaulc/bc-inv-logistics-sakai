@@ -1,5 +1,6 @@
 import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
 import { Product } from './products'; // Adjust the import path if necessary
+import { Dispatch, SetStateAction } from 'react'; // Import Dispatch and SetStateAction from react
 
 export interface ShipmentItem {
     sku: string; // Reference to SKU from products collection
@@ -26,19 +27,30 @@ export interface Shipment {
 export interface Order {
     id?: string;
     orderId: string;
-    orderDate: Date | null;
-    finalCountDate: Date | null;
-    finishManufactureDate: Date | null;
-    leavePortDate: Date | null;
-    arrivePortDate: Date | null;
-    deliveredToAmazonDate: Date | null;
-    availableInAmazonDate: Date | null;
-    coverageDate: Date | null;
+    orderDate?: Date | null;
+    finalCountDate?: Date | null;
+    finishManufactureDate?: Date | null;
+    leavePortDate?: Date | null;
+    arrivePortDate?: Date | null;
+    deliveredToAmazonDate?: Date | null;
+    availableInAmazonDate?: Date | null;
+    coverageDate?: Date | null;
     contract?: string;
     deposit?: number;
     totalCost?: number;
     shipments?: Shipment[]; // Shipments are associated with the order
 }
+
+export interface OrderEditModalProps {
+    order: Order | null;
+    setOrder: React.Dispatch<React.SetStateAction<Order | null>>;
+    visible: boolean;
+    onHide: () => void;
+    onSave: () => Promise<void>;
+    submitted: boolean;
+}
+
+
 
 export interface EventItem {
     status: string;

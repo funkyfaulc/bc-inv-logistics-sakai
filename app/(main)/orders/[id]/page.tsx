@@ -1,8 +1,9 @@
 // app/(main)/orders/[id]/page.tsx
 
 'use client';
+
 import { useParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState,Suspense } from 'react';
 import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
 import { Timeline } from 'primereact/timeline';
@@ -193,14 +194,14 @@ const OrderDetails = () => {
 
     // Define the timeline events
     const events: EventItem[] = [
-        { status: 'Order Placed', date: order.orderDate, icon: 'pi pi-shopping-cart', color: '#007bff' },
-        { status: 'Final Count', date: order.finalCountDate, icon: 'pi pi-check', color: '#28a745' },
-        { status: 'Manufacturing Complete', date: order.finishManufactureDate, icon: 'pi pi-cog', color: '#ffc107' },
-        { status: 'Left Port', date: order.leavePortDate, icon: 'pi pi-send', color: '#17a2b8' },
-        { status: 'Arrived at Destination', date: order.arrivePortDate, icon: 'pi pi-map-marker', color: '#ff5733' },
-        { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate, icon: 'pi pi-box', color: '#6610f2' },
-        { status: 'Available in Amazon', date: order.availableInAmazonDate, icon: 'pi pi-check-circle', color: '#28a745' },
-        { status: 'Coverage End', date: order.coverageDate, icon: 'pi pi-calendar-times', color: '#dc3545' }
+        { status: 'Order Placed', date: order.orderDate ?? null, icon: 'pi pi-shopping-cart', color: '#007bff' },
+        { status: 'Final Count', date: order.finalCountDate ?? null, icon: 'pi pi-check', color: '#28a745' },
+        { status: 'Manufacturing Complete', date: order.finishManufactureDate ?? null, icon: 'pi pi-cog', color: '#ffc107' },
+        { status: 'Left Port', date: order.leavePortDate ?? null, icon: 'pi pi-send', color: '#17a2b8' },
+        { status: 'Arrived at Destination', date: order.arrivePortDate ?? null, icon: 'pi pi-map-marker', color: '#ff5733' },
+        { status: 'Delivered to Amazon', date: order.deliveredToAmazonDate ?? null, icon: 'pi pi-box', color: '#6610f2' },
+        { status: 'Available in Amazon', date: order.availableInAmazonDate ?? null, icon: 'pi pi-check-circle', color: '#28a745' },
+        { status: 'Coverage End', date: order.coverageDate ?? null, icon: 'pi pi-calendar-times', color: '#dc3545' }
     ];
 
     const today = new Date();
@@ -473,4 +474,10 @@ const OrderDetails = () => {
     );
 };
 
-export default OrderDetails;
+const OrdersDetailsPage = () => (
+    <Suspense fallback={<div>Loading...</div>}>
+        <OrderDetails />
+    </Suspense>
+)
+
+export default OrdersDetailsPage;

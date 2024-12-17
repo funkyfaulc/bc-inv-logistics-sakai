@@ -1,4 +1,7 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/orders/page.tsx
+
 'use client';
+
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
@@ -7,7 +10,7 @@ import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { Calendar } from 'primereact/calendar';
 import { OrderService } from '../../../demo/services/OrderService';
 import { useRouter } from 'next/navigation';
@@ -440,4 +443,10 @@ const OrderManagement = () => {
     );
 };
 
-export default OrderManagement;
+const OrdersPage = () => (
+        <Suspense fallback={<div>Loading...</div>}>
+            <OrderManagement />
+        </Suspense>
+);
+
+export default OrdersPage;

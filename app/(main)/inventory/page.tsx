@@ -1,7 +1,7 @@
 // bc-inv-logistics-sakai/app/(main)/inventory/page.tsx
-
 'use client';
-import React, { useRef, useState } from 'react';
+
+import React, { useRef, useState, Suspense } from 'react';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dialog } from 'primereact/dialog';
@@ -10,6 +10,9 @@ import Papa from 'papaparse';
 import { InventoryService } from '../../../demo/services/InventoryService';
 import { InventoryUpdate } from '../../../types/inventory';
 import { Timestamp } from 'firebase/firestore';
+
+
+
 
 const Inventory = () => {
     const [inventoryUploadDialog, setInventoryUploadDialog] = useState(false);
@@ -115,4 +118,11 @@ const Inventory = () => {
     );
 };
 
-export default Inventory;
+
+const InventoryPage = () => (
+    <Suspense fallback={<div>Loading...</div>}>
+        <Inventory />
+    </Suspense>
+);
+
+export default InventoryPage;

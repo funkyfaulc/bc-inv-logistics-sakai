@@ -16,7 +16,7 @@
     "@types/react-dom": "18.2.5",
     "chart.js": "4.2.1",
     "firebase": "^10.13.2",
-    "next": "^14.2.13",
+    "next": "^15.1.0",
     "papaparse": "^5.4.1",
     "primeflex": "^3.3.1",
     "primeicons": "^6.0.1",
@@ -31,8 +31,4 @@
     "prettier": "^2.8.8",
     "sass": "^1.63.4"
   }
-
-  
-
-
 }

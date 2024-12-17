@@ -3,7 +3,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEventListener, useMountEffect, useUnmountEffect } from 'primereact/hooks';
-import React, { useContext, useEffect, useRef } from 'react';
+import React, { Suspense, useContext, useEffect, useRef } from 'react';
 import { classNames } from 'primereact/utils';
 import AppFooter from './AppFooter';
 import AppSidebar from './AppSidebar';
@@ -14,7 +14,7 @@ import { PrimeReactContext } from 'primereact/api';
 import { ChildContainerProps, LayoutState, AppTopbarRef } from '@/types';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-const Layout = ({ children }: ChildContainerProps) => {
+const LayoutContent = ({ children }: ChildContainerProps) => {
     const { layoutConfig, layoutState, setLayoutState } = useContext(LayoutContext);
     const { setRipple } = useContext(PrimeReactContext);
     const topbarRef = useRef<AppTopbarRef>(null);
@@ -112,6 +112,7 @@ const Layout = ({ children }: ChildContainerProps) => {
         unbindProfileMenuOutsideClickListener();
     });
 
+
     const containerClass = classNames('layout-wrapper', {
         'layout-overlay': layoutConfig.menuMode === 'overlay',
         'layout-static': layoutConfig.menuMode === 'static',
@@ -123,21 +124,29 @@ const Layout = ({ children }: ChildContainerProps) => {
     });
 
     return (
-        <React.Fragment>
-            <div className={containerClass}>
-                <AppTopbar ref={topbarRef} />
-                <div ref={sidebarRef} className="layout-sidebar">
-                    <AppSidebar />
+        <Suspense fallback={<div>Loading Layout...</div>}>
+            <React.Fragment>
+                <div className={containerClass}>
+                    <AppTopbar ref={topbarRef} />
+                    <div ref={sidebarRef} className="layout-sidebar">
+                        <AppSidebar />
+                    </div>
+                    <div className="layout-main-container">
+                        <div className="layout-main">{children}</div>
+                        <AppFooter />
+                    </div>
+                    <AppConfig />
+                    <div className="layout-mask"></div>
                 </div>
-                <div className="layout-main-container">
-                    <div className="layout-main">{children}</div>
-                    <AppFooter />
-                </div>
-                <AppConfig />
-                <div className="layout-mask"></div>
-            </div>
-        </React.Fragment>
+            </React.Fragment>
+        </Suspense>
     );
 };
+
+const Layout = (props: ChildContainerProps) => (
+    <Suspense fallback={<div>Loading Layout...</div>}>
+        <LayoutContent {...props} />
+    </Suspense>
+);
 
 export default Layout;

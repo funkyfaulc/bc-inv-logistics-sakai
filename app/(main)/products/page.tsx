@@ -1,5 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
+
 'use client';
+
 import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
@@ -9,14 +11,19 @@ import { Dropdown, DropdownChangeEvent } from 'primereact/dropdown';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
 import { ProductService } from '../../../demo/services/ProductService';
 import Papa from 'papaparse';
 import { Product as ProductType } from '@/types/products';
+import { Order } from '@/types/orders';
 
 interface Product extends ProductType {
     [key: string]: any;
 }
+
+//Lavy load the OrderEditModal component
+const OrderEditModal = lazy(() => import('@/app/(main)/orders/modal/OrderEditModal'));
+
 
 const Crud = () => {
     const emptyProduct = {
@@ -34,14 +41,28 @@ const Crud = () => {
     const [productDialog, setProductDialog] = useState(false);
     const [deleteProductDialog, setDeleteProductDialog] = useState(false);
     const [deleteProductsDialog, setDeleteProductsDialog] = useState(false);
+    const [bulkUploadDialog, setBulkUploadDialog] = useState(false); // Add this for dialog state
     const [product, setProduct] = useState<Product>(emptyProduct);
     const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
-    const [submitted, setSubmitted] = useState(false);
     const [globalFilter, setGlobalFilter] = useState('');
-    const [bulkUploadDialog, setBulkUploadDialog] = useState(false); // Add this for dialog state
+    const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const [order, setOrder] = useState<Order | null>(null);
+  
 
     const toast = useRef<Toast>(null);
     const dt = useRef(null);
+
+    const handleHideModal = () => {
+        setIsEditModalVisible(false);
+    };
+
+    const handleSaveOrder = async () => {
+        setSubmitted(true);
+        //Save Logic Here
+        setIsEditModalVisible(false);
+    };
+
 
     const productOptions = [
         { label: 'Bed Sheets', value: 'Bed Sheets' },
@@ -545,10 +566,27 @@ const Crud = () => {
                             <InputText type="file" accept=".csv" onChange={handleFileUpload} />
                         </div>
                     </Dialog>
+
+                    <Suspense fallback={<div>Loading...</div>}>
+                        <OrderEditModal
+                            order={order}
+                            setOrder={setOrder}
+                            visible={isEditModalVisible}
+                            onHide={handleHideModal}
+                            onSave={handleSaveOrder}
+                            submitted={submitted}
+                            />
+                    </Suspense>
                 </div>
             </div>
         </div>
     );
 };
 
-export default Crud;
+const ProductsPage = () => (
+    <Suspense fallback={<div>Loading...</div>}>
+        <Crud />
+    </Suspense>
+);
+
+export default ProductsPage;

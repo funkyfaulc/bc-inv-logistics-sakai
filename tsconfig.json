@@ -27,9 +27,9 @@
     "paths": {
       "@firebase": ["app/firebase"],
       "@/*": ["./*"],
-      "@types/*": ["./types/*"],
+      "@types/*": ["types/*"],
       "@services/*": ["/demo/services/*"],
-      "@components/*": ["app/components/*"]
+      "@components/*": ["app/components/*"],
     }
   },
   "include": [
