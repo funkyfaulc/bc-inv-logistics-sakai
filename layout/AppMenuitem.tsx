@@ -1,16 +1,12 @@
 'use client';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import React, { useEffect, useContext, Suspense } from 'react';
 import { Ripple } from 'primereact/ripple';
 import { classNames } from 'primereact/utils';
-import React, { useEffect, useContext, Suspense } from 'react';
 import { CSSTransition } from 'react-transition-group';
 import { MenuContext } from './context/menucontext';
 import { AppMenuItemProps } from '@/types';
 import { usePathname, useSearchParams } from 'next/navigation';
 
-
-// **Wrapper Component with Suspense**
 const AppMenuitem = (props: AppMenuItemProps) => {
     return (
         <Suspense fallback={<div>Loading Menu...</div>}>
@@ -19,110 +15,62 @@ const AppMenuitem = (props: AppMenuItemProps) => {
     );
 };
 
-
 const ActualMenuitem = (props: AppMenuItemProps) => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const { activeMenu, setActiveMenu } = useContext(MenuContext);
-    const item = props.item;
-    const key = props.parentKey ? props.parentKey + '-' + props.index : String(props.index);
-    const isActiveRoute = item?.to ? pathname === item!.to : false
-    const active = activeMenu === key || (key && activeMenu?.startsWith?.(key) || false);
-    const onRouteChange = (url: string) => {
-        if (item?.to && item.to === url) {
-            setActiveMenu(key);
-        }
-    };
 
-    useEffect(() => {
-        onRouteChange(pathname);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pathname, searchParams]);
+    const item = props.item;
+    if (!item) {
+        console.warn('Menu item is undefined or null', props);
+        return null;
+    }
+
+    const key = props.parentKey ? `${props.parentKey}-${props.index}` : String(props.index);
+    const active = activeMenu === key || (key && activeMenu?.startsWith(key));
+    const isActiveRoute = item.to ? pathname === item.to : false;
 
     const itemClick = (event: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => {
-        //avoid processing disabled items
-        if (item!.disabled) {
+        if (item.disabled) {
             event.preventDefault();
             return;
         }
-
-        //execute command
-        if (item!.command) {
-            item!.command({ originalEvent: event, item: item });
+        if (item.command) {
+            item.command({ originalEvent: event, item });
         }
-
-        // toggle active state
-        if (item!.items) setActiveMenu(active ? (props.parentKey as string) : key);
-        else setActiveMenu(key);
+        setActiveMenu(active ? null : key);
     };
 
-    const subMenu = item?.items && item?.visible !== false && (
-        <CSSTransition timeout={{ enter: 1000, exit: 450 }} classNames="layout-submenu" in={Boolean(props.root || active)} key={item?.label}>
+    const subMenu = item.items && (
+        <CSSTransition
+            timeout={{ enter: 1000, exit: 450 }}
+            classNames="layout-submenu"
+            in={Boolean(props.root || active)}
+            key={item.label || 'unknown'}
+        >
             <ul>
-                {item?.items.map((child, i) => {
-                    return <AppMenuitem item={child} index={i} className={child.badgeClass} parentKey={key} key={child.label} />;
+                {item.items.map((child, i) => {
+                    if (!child || !child.label) {
+                        console.warn('Invalid nested menu item:', child);
+                        return null; // Skip invalid nested items
+                    }
+                    return <AppMenuitem item={child} index={i} parentKey={key} key={child.label || `child-${i}`} />;
                 })}
             </ul>
         </CSSTransition>
     );
 
-    if (!item) {
-        console.error('Menu item is undefined or null');
-        return null;
-    }
-
     return (
         <li className={classNames({ 'layout-root-menuitem': props.root, 'active-menuitem': active })}>
-            {props.root && item?.visible !== false && (
-                <div className="layout-menuitem-root-text">{item?.label || ''}</div>
-            )}
-    
-            {(!item?.to || item?.items) && item?.visible !== false ? (
-                <a
-                    href={item?.url || '#'}
-                    onClick={(e) => itemClick(e)}
-                    className={classNames(item?.class, 'p-ripple')}
-                    target={item?.target || ''}
-                    tabIndex={0}
-                >
-                    {item?.icon && (
-                        <i className={classNames('layout-menuitem-icon', item.icon)}></i>
-                    )}
-                    <span className="layout-menuitem-text">{item?.label || ''}</span>
-                    {item?.items && (
-                        <i className="pi pi-fw pi-angle-down layout-submenu-toggler"></i>
-                    )}
-                    <Ripple />
-                </a>
-            ) : null}
-    
-            {item?.to && !item?.items && item?.visible !== false ? (
-                <Link
-                    href={item.to}
-                    replace={item?.replaceUrl || false}
-                    target={item?.target || ''}
-                    onClick={(e) => itemClick(e)}
-                    className={classNames(item?.class, 'p-ripple', {
-                        'active-route': isActiveRoute
-                    })}
-                    tabIndex={0}
-                >
-                    {item?.icon && (
-                        <i className={classNames('layout-menuitem-icon', item.icon)}></i>
-                    )}
-                    <span className="layout-menuitem-text">{item?.label || ''}</span>
-                    {item?.items && (
-                        <i className="pi pi-fw pi-angle-down layout-submenu-toggler"></i>
-                    )}
-                    <Ripple />
-                </Link>
-            ) : null}
-    
+            <a href={item.to || '#'} onClick={(e) => itemClick(e)} className="p-ripple">
+                {item.icon && <i className={classNames('layout-menuitem-icon', item.icon)} />}
+                <span>{item.label || ''}</span>
+                {item.items && <i className="pi pi-fw pi-angle-down layout-submenu-toggler"></i>}
+                <Ripple />
+            </a>
             {subMenu}
         </li>
     );
 };
-
-
 
 export default AppMenuitem;

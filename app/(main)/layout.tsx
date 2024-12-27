@@ -33,7 +33,6 @@ export const viewport = {
 export default function AppLayout({ children }: AppLayoutProps) {
     return (
         <Layout>
-            <AppMenuitem />
             {children}
         </Layout>
     );

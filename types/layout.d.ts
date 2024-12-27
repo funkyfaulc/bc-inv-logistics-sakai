@@ -48,8 +48,8 @@ export interface LayoutContextProps {
 }
 
 export interface MenuContextProps {
-    activeMenu: string;
-    setActiveMenu: Dispatch<SetStateAction<string>>;
+    activeMenu: string | null;
+    setActiveMenu: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 /* AppConfig Types */
