@@ -3,15 +3,23 @@
 export interface InventoryRecord {
     id?: string; // Firestore document ID
     asin: string; // ASIN for linking to a product
-    sku?: string; // SKU for inventory identification
-    totalUnits?: number; // Total units across all categories (optional as it's calculated in the service)
-    breakdown: {
-        production: number; // Units in production
-        inbound_to_awd: number; // Units inbound to AWD
-        awd: number; // Units in AWD
-        fba: number; // Units in FBA
+    sku?: string; // Optional SKU for internal identification
+    fba: number; // Available units at FBA
+    inbound_to_fba: number; // Total inbound units to FBA
+    reserved_units: number; // Total reserved units at FBA
+    breakdown?: {
+        reserved_fc_transfer?: number; // Reserved for FC transfer
+        reserved_fc_processing?: number; // Reserved in FC processing
+        reserved_customer_order?: number; // Reserved for customer orders
+        inbound_working?: number; // Units working inbound to FBA
+        inbound_shipped?: number; // Units shipped to FBA
+        inbound_received?: number; // Units received at FBA
     };
-    createdAt?: Date; // Record creation timestamp (optional as it's added in the service)
-    updatedAt?: Date; // Last updated timestamp (optional as it's added in the service)
+    awd?: number; // Available units at AWD
+    inbound_to_awd?: number; // Total inbound units to AWD
+    snapshotDate: Date; // Date of the report snapshot
+    createdAt: Date; // Record creation timestamp
+    updatedAt: Date; // Last updated timestamp
     notes?: string; // Additional notes
+    sourceFileName?: string; // Optional filename for reference
 }

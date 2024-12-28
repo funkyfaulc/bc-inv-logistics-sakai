@@ -5,6 +5,7 @@
 import React, { useEffect } from 'react';
 import { InventoryRecordsService } from '../../../../demo/services/InventoryRecordsService';
 
+
 const TestInventoryRecords = () => {
     useEffect(() => {
         async function runTest() {
@@ -14,12 +15,22 @@ const TestInventoryRecords = () => {
                 await InventoryRecordsService.addInventoryRecord({
                     asin: 'B0TEST12345',
                     sku: 'TEST-SKU-001',
+                    fba: 150,
+                    inbound_to_fba: 50,
+                    reserved_units: 100,
                     breakdown: {
-                        production: 100,
-                        inbound_to_awd: 50,
-                        fba: 20,
-                        awd: 10,
+                        reserved_fc_transfer: 20,
+                        reserved_fc_processing: 30,
+                        reserved_customer_order: 50,
+                        inbound_working: 10,
+                        inbound_shipped: 40,
+                        inbound_received: 60,
                     },
+                    snapshotDate: new Date(),
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                    notes: 'Initial test record',
+                    sourceFileName: 'FBA-Report-2024.csv',
                 });
                 console.log('Record added successfully!');
 

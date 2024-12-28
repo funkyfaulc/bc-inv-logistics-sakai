@@ -9,10 +9,13 @@ const inventoryCollection = collection(db, 'inventory_records');
 export const InventoryRecordsService = {
     async addInventoryRecord(record: InventoryRecord): Promise<void> {
         try {
-            const totalUnits = Object.values(record.breakdown).reduce((sum, count) => sum + count, 0); // Calculate total units
+            const totalUnits = record.breakdown
+            ? Object.values(record.breakdown).reduce((sum, count) => sum + (count || 0), 0) 
+            : 0; //default to 0 if breakdown is not provided
             await addDoc(inventoryCollection, {
                 ...record,
                 totalUnits,
+                snapshotDate: record.snapshotDate || Timestamp.now(), //Use provided date or default snaphot date
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             });
@@ -33,7 +36,11 @@ export const InventoryRecordsService = {
         );
     },
 
-    async updateInventoryRecord(id: string, updatedBreakdown: Partial<InventoryRecord['breakdown']>, notes?: string): Promise<void> {
+    async updateInventoryRecord(
+        id: string, 
+        updates: Partial<Omit<InventoryRecord, 'id' | 'createdAt' | 'updatedAt'>>,
+        notes?: string
+    ): Promise<void> {
         try {
             const docRef = doc(db, 'inventory_records', id);
             const snapshot = await getDoc(docRef);
@@ -41,17 +48,18 @@ export const InventoryRecordsService = {
 
             const newBreakdown = {
                 ...existingData.breakdown,
-                ...updatedBreakdown, // Merge updated fields
+                ...(updates.breakdown || {}), // Merge breakdown if provided
             };
-            const totalUnits = Object.values(newBreakdown).reduce((sum, count) => sum + count, 0);
 
-            await updateDoc(docRef, {
-                breakdown: newBreakdown,
-                totalUnits,
-                updatedAt: Timestamp.now(),
+            const updatedFields = {
+                ...updates, //Include top-level updates like `fba`
+                breakdown: newBreakdown, //Updated breakdown
+                updatedAt: Timestamp.now(), //Update timestamp
                 notes,
-            });
-
+            };
+                        
+            await updateDoc(docRef,updatedFields);
+            
             console.log('Inventory record updated successfully!');
         } catch (error) {
             console.error('Error updating inventory record:', error);

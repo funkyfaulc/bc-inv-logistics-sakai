@@ -13,7 +13,7 @@ export const ProductService = {
     },
 
     // Add a new product to Firestore
-    async addProduct(product: Product): Promise<void> {
+    async addProduct(product: Omit<Product, 'id'>): Promise<void> {
         try {
             console.log('Attempting to add product:', product); // Add this
             await addDoc(productCollection, {
