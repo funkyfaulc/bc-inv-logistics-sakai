@@ -12,6 +12,8 @@ export interface Product {
     sku?: string;
     upc?: string;
     optimalUnitsPerCarton?: number; // New field for carton tracking
+    validColors?: string[]; // New field for color options
+    validSizes?: string[]; // New field for size options
     created_at?: Timestamp;
     updated_at?: Timestamp;
 }

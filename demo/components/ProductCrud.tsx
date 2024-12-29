@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
-import ProductService from '@/services/ProductService'; // Adjust path as per your project structure
+import ProductService from '../services/ProductService';
 import { Product } from '@/types/products';
 
 const ProductCrud = () => {
@@ -11,19 +11,17 @@ const ProductCrud = () => {
     const [sizeOptions, setSizeOptions] = useState<{ label: string; value: string }[]>([]);
 
     useEffect(() => {
-        ProductService.getProducts().then((data) => setProducts(data));
+        ProductService.getProducts().then((data: Product[]) => setProducts(data));
     }, []);
 
-    const handleProductChange = async (productName: string) => {
-        const productDetails = products.find((p) => p.product === productName);
+    const handleProductChange = async (selectedProduct: string) => {
+        const productDetails = await ProductService.getProductByName(selectedProduct);
         if (productDetails) {
-            setSelectedProduct(productDetails);
-            setColorOptions(
-                productDetails.validColors.map((color) => ({ label: color, value: color }))
-            );
-            setSizeOptions(
-                productDetails.validSizes.map((size) => ({ label: size, value: size }))
-            );
+            const colors = productDetails.validColors || [];
+            const sizes = productDetails.validSizes || [];
+
+            setColorOptions(colors.map((color: string) => ({ label: color, value: color })));
+            setSizeOptions(sizes.map((size: string) => ({ label: size, value: size })));
         }
     };
 

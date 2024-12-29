@@ -4,7 +4,7 @@ import { Product } from 'types/products'; // Import Product interface
 
 const productCollection = collection(db, 'products_sk');
 
-const ProductService = {
+export const ProductService = {
     // Fetch all products from Firestore
     async getProducts(): Promise<Product[]> {
         const snapshot = await getDocs(productCollection);

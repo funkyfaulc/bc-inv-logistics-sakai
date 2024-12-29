@@ -16,6 +16,7 @@
     "@types/react-dom": "18.2.5",
     "chart.js": "4.2.1",
     "firebase": "^10.13.2",
+    "firebase-admin": "^13.0.2",
     "next": "^15.1.0",
     "papaparse": "^5.4.1",
     "primeflex": "^3.3.1",

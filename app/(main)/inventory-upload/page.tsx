@@ -9,7 +9,7 @@ import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
 import Papa from 'papaparse';
 import { InventoryRecordsService } from '../../../demo/services/InventoryRecordsService'; // Adjust path if needed
-import { ProductService } from '../../../demo/services/ProductService';
+import ProductService from '../../../demo/services/ProductService';
 import { InventoryRecord } from '../../../types/inventoryRecords';
 import { Timestamp } from 'firebase/firestore';
 
