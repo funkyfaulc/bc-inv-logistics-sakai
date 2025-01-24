@@ -2,9 +2,21 @@ import { db } from '../../app/firebase'; // Adjust path as needed
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, serverTimestamp } from 'firebase/firestore';
 import { Product } from 'types/products'; // Import Product interface
 
+//products collection
 const productCollection = collection(db, 'products_sk');
 
+//product_types collection
+const productTypesCollection = collection(db, 'product_types');
+
 export const ProductService = {
+    
+    // Fetch product types from Firestore
+    async getProductTypes(): Promise<any[]> {
+        const snapshot = await getDocs(productTypesCollection);
+        return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    }, 
+
+
     // Fetch all products from Firestore
     async getProducts(): Promise<Product[]> {
         const snapshot = await getDocs(productCollection);

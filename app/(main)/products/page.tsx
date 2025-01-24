@@ -17,11 +17,12 @@ import Papa from 'papaparse';
 import { Product as ProductType } from '@/types/products';
 import { Order } from '@/types/orders';
 
+
 interface Product extends ProductType {
     [key: string]: any;
 }
 
-//Lavy load the OrderEditModal component
+//Lazy load the OrderEditModal component
 const OrderEditModal = lazy(() => import('@/app/(main)/orders/modal/OrderEditModal'));
 
 
@@ -48,7 +49,8 @@ const Crud = () => {
     const [isEditModalVisible, setIsEditModalVisible] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [order, setOrder] = useState<Order | null>(null);
-  
+    const [materialOptions, setMaterialOptions] = useState<{ label: string; value: string }[]>([]);
+
 
     const toast = useRef<Toast>(null);
     const dt = useRef(null);
@@ -73,79 +75,45 @@ const Crud = () => {
         { label: 'Crib Sheet', value: 'Crib Sheet' }
     ];
 
-    const materialOptions = [
-        { label: 'Bamboo', value: 'Bamboo' },
-        { label: 'Silk', value: 'Silk' }
-    ];
-
-    const colorOptionsByProduct: { [key: string]: { label: string; value: string }[] } = {
-        'Bed Sheets': [
-            { label: 'Black', value: 'Black' },
-            { label: 'Coastal Blue', value: 'Coastal Blue' },
-            { label: 'Charcoal Grey', value: 'Charcoal Grey' },
-            { label: 'Champagne', value: 'Champagne' },
-            { label: 'Dune', value: 'Dune' },
-            { label: 'Grey Mist', value: 'Grey Mist' },
-            { label: 'Ivory', value: 'Ivory' },
-            { label: 'Lilac', value: 'Lilac' },
-            { label: 'Marigold', value: 'Marigold' },
-            { label: 'Merlot', value: 'Merlot' },
-            { label: 'Mocha', value: 'Mocha' },
-            { label: 'Olive', value: 'Olive' },
-            { label: 'Raisin', value: 'Raisin' },
-            { label: 'Slate Blue', value: 'Slate Blue' },
-            { label: 'Sea Glass', value: 'Sea Glass' },
-            { label: 'Twilight Blue', value: 'Twilight Blue' },
-            { label: 'White', value: 'White' }
-        ],
-        Pillowcase: [
-            { label: 'Black', value: 'Black' },
-            { label: 'Coastal Blue', value: 'Coastal Blue' },
-            { label: 'Charcoal Grey', value: 'Charcoal Grey' },
-            { label: 'Champagne', value: 'Champagne' },
-            { label: 'Dune', value: 'Dune' },
-            { label: 'Grey Mist', value: 'Grey Mist' },
-            { label: 'Ivory', value: 'Ivory' },
-            { label: 'Lilac', value: 'Lilac' },
-            { label: 'Marigold', value: 'Marigold' },
-            { label: 'Merlot', value: 'Merlot' },
-            { label: 'Mocha', value: 'Mocha' },
-            { label: 'Olive', value: 'Olive' },
-            { label: 'Raisin', value: 'Raisin' },
-            { label: 'Slate Blue', value: 'Slate Blue' },
-            { label: 'Sea Glass', value: 'Sea Glass' },
-            { label: 'Twilight Blue', value: 'Twilight Blue' },
-            { label: 'White', value: 'White' }
-        ]
-    };
-
-    const sizeOptionsByProduct: { [key: string]: { label: string; value: string }[] } = {
-        'Bed Sheets': [
-            { label: 'Queen', value: 'Queen' },
-            { label: 'King', value: 'King' },
-            { label: 'Cal King', value: 'Cal King' },
-            { label: 'Split King', value: 'Split King' },
-            { label: 'Twin', value: 'Twin' },
-            { label: 'TwinXL', value: 'TwinXL' },
-            { label: 'Full', value: 'Full' },
-            { label: 'Split Top King', value: 'Split Top King' }
-        ],
-        Pillowcase: [
-            { label: 'Standard', value: 'Standard' },
-            { label: 'Queen', value: 'Queen' },
-            { label: 'King', value: 'King' }
-        ]
-    };
-
+    // materialOptions, colorOptionsByProduct, and sizeOptionsByProduct are dynamically updated based on the selected product type.
+    
     const [colorOptions, setColorOptions] = useState<{ label: string; value: string }[]>([]);
     const [sizeOptions, setSizeOptions] = useState<{ label: string; value: string }[]>([]);
+    const [productTypes, setProductTypes] = useState<any[]>([]);
+    
+    const fetchProducts = async () => {
+        try {
+            const data = await ProductService.getProducts();
+            const productsWithDocId = data.map((doc: any) => ({
+                ...doc,
+                firestoreId: doc.id, // Map Firestore document ID to id field
+            }));
+            setProducts(productsWithDocId);
+    
+            console.log('Fetched products:', productsWithDocId);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        }
+    };
 
     useEffect(() => {
-        ProductService.getProducts().then((data) => setProducts(data));
+        const fetchProductTypes = async () => {
+            try {
+                const productTypes = await ProductService.getProductTypes(); // Fetch product types from Firestore
+                console.log('Fetched productTypes:', productTypes); // Debug the fetched data
+                setProductTypes(productTypes); // Set the state
+            } catch (error) {
+                console.error('Error fetching product types:', error);
+            }
+        };
+    
+        fetchProductTypes();
+        fetchProducts(); // Call the reusable fetchProducts function
     }, []);
 
     const openNew = () => {
         setProduct(emptyProduct);
+        setMaterialOptions([]); // Clear material options
         setSubmitted(false);
         setProductDialog(true);
     };
@@ -166,6 +134,97 @@ const Crud = () => {
         setProductDialog(true);
     };
 
+    const saveProduct = async () => {
+        setSubmitted(true);
+    
+        if (!product.product.trim()) {
+            console.error('Product type is required.');
+            return;
+        }
+    
+        // Ensure material defaults to Bamboo if not set
+        if (!product.material || product.material === '') {
+            console.warn('Material not set; defaulting to Bamboo.');
+            product.material = 'Bamboo';
+        }
+    
+        try {
+            if (product.id) {
+                // Update existing product in Firestore
+                await ProductService.updateProduct(product.id, product);
+    
+                // Update product in local state
+                setProducts((prevProducts) =>
+                    prevProducts.map((p) => (p.id === product.id ? product : p))
+                );
+            } else {
+                // Add new product
+                product.id = createId();
+                await ProductService.addProduct(product);
+    
+                // Add product to local state
+                setProducts((prevProducts) => [...prevProducts, product]);
+            }
+    
+            setProductDialog(false);
+            setProduct(emptyProduct);
+    
+            if (toast.current) {
+                toast.current.show({
+                    severity: 'success',
+                    summary: 'Successful',
+                    detail: product.id ? 'Product Updated' : 'Product Created',
+                    life: 3000,
+                });
+            }
+        } catch (error) {
+            console.error('Error saving product:', error);
+            if (toast.current) {
+                toast.current.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to save product',
+                    life: 3000,
+                });
+            }
+        }
+    };
+    
+
+
+    //V2
+    /*
+    const saveProduct = async () => {
+        setSubmitted(true);
+    
+        if (!product.product.trim()) {
+            console.error('Product type is required.');
+            return;
+        }
+    
+        // Ensure material defaults to Bamboo if not set
+        if (!product.material || product.material === '') {
+            console.warn('Material not set; defaulting to Bamboo.');
+            product.material = 'Bamboo';
+        }
+    
+        console.log('Saving product to Firestore:', product);
+    
+        if (product.id) {
+            await ProductService.updateProduct(product.id, product);
+        } else {
+            product.id = createId();
+            await ProductService.addProduct(product);
+        }
+    
+        setProducts([...products, product]);
+        setProductDialog(false);
+        setProduct(emptyProduct);
+    };
+    */
+
+//OG
+/*
     const saveProduct = async () => {
         setSubmitted(true);
 
@@ -221,25 +280,218 @@ const Crud = () => {
             setProduct(emptyProduct);
         }
     };
+*/
+
+const setDynamicOptions = (selectedProduct: string, selectedMaterial?: string) => {
+    console.log('setDynamicOptions called for:', selectedProduct, selectedMaterial);
+
+    // Find the selected product type in the productTypes collection
+    const productType = productTypes.find((type) => type.product === selectedProduct);
+    console.log('Product Type:', productType);
+
+    if (!productType) {
+        console.error('No product type found for:', selectedProduct);
+        return;
+    }
+
+    // Check if the product type has materials
+    const hasMaterials = productType.materials && Object.keys(productType.materials).length > 0;
+
+    if (hasMaterials) {
+        console.log('Handling product with materials...');
+
+        // Create material options from productType.materials
+        const materials = productType.materials;
+        const materialOptions = Object.keys(materials).map((material) => ({
+            label: material,
+            value: material,
+        }));
+        setMaterialOptions(materialOptions);
+
+        // Use the selected material or default to the first material
+        const materialToUse = selectedMaterial || product.material || materialOptions[0]?.value || '';
+
+        // Fetch validColors and validSizes for the selected material
+        const materialData = materials[materialToUse] || {};
+        setColorOptions(
+            materialData.validColors?.map((color: string) => ({ label: color, value: color })) || []
+        );
+        setSizeOptions(
+            materialData.validSizes?.map((size: string) => ({ label: size, value: size })) || []
+        );
+
+        // Update the product's material if necessary
+        if (materialToUse !== product.material) {
+            setProduct((prev) => ({
+                ...prev,
+                material: materialToUse,
+            }));
+        }
+
+        console.log('Material Options:', materialOptions);
+        console.log('Color Options:', materialData.validColors);
+        console.log('Size Options:', materialData.validSizes);
+    } else {
+        console.log('Handling product without materials...');
+
+        // Handle products without materials (default to productType.validColors and validSizes)
+        setMaterialOptions([]); // No materials for this product type
+        setColorOptions(
+            productType.validColors?.map((color: string) => ({ label: color, value: color })) || []
+        );
+        setSizeOptions(
+            productType.validSizes?.map((size: string) => ({ label: size, value: size })) || []
+        );
+
+        // Clear material for non-material products
+        if (product.material) {
+            setProduct((prev) => ({
+                ...prev,
+                material: '', // Ensure material is empty
+            }));
+        }
+
+        console.log('Color Options (No Material):', productType.validColors);
+        console.log('Size Options (No Material):', productType.validSizes);
+    }
+};
+
+//Version working other than Pillowcase Silk
+/*
+const setDynamicOptions = (selectedProduct: string) => {
+    console.log('setDynamicOptions called for:', selectedProduct);
+
+    // Find the selected product type in the productTypes collection
+    const productType = productTypes.find((type) => type.product === selectedProduct);
+    console.log('Product Type:', productType);
+
+    if (!productType) {
+        console.error('No product type found for:', selectedProduct);
+        return;
+    }
+
+    // Check if the product has materials
+    const hasMaterials = productType.materials && Object.keys(productType.materials).length > 0;
+
+    if (hasMaterials) {
+        // Handle products with materials
+        const materials = productType.materials;
+
+        // Create material options for the dropdown
+        const materialOptions = Object.keys(materials).map((material) => ({
+            label: material,
+            value: material,
+        }));
+        setMaterialOptions(materialOptions);
+
+        // Default to the first material if none is selected
+        const defaultMaterial = product.material || materialOptions[0]?.value;
+
+        // Fetch valid colors and sizes for the selected or default material
+        const materialData = materials[defaultMaterial] || {};
+        setColorOptions(
+            materialData.validColors?.map((color: string) => ({ label: color, value: color })) || []
+        );
+        setSizeOptions(
+            materialData.validSizes?.map((size: string) => ({ label: size, value: size })) || []
+        );
+
+        // Update the product state with the default material if necessary
+        setProduct((prev) => ({
+            ...prev,
+            material: defaultMaterial,
+        }));
+
+        console.log('Material Options:', materialOptions);
+        console.log('Color Options:', materialData.validColors);
+        console.log('Size Options:', materialData.validSizes);
+    } else {
+        // Handle products without materials
+        setMaterialOptions([]); // Clear material options
+        setColorOptions(
+            productType.validColors?.map((color: string) => ({ label: color, value: color })) || []
+        );
+        setSizeOptions(
+            productType.validSizes?.map((size: string) => ({ label: size, value: size })) || []
+        );
+
+        // Ensure material is empty for non-material products
+        setProduct((prev) => ({
+            ...prev,
+            material: '', // No material
+        }));
+
+        console.log('Color Options (No Material):', productType.validColors);
+        console.log('Size Options (No Material):', productType.validSizes);
+    }
+};
+*/
+
+//older Code
+/*
+        if (selectedMaterial && productType?.materials?.[selectedMaterial]) {
+            const materialData = productType.materials[selectedMaterial];
+            setColorOptions(
+                materialData.validColors?.map((color: string) => ({ label: color, value: color })) || []
+            );
+            setSizeOptions(
+                materialData.validSizes?.map((size: string) => ({ label: size, value: size })) || []
+            );
+            console.log('Dynamic options set for material:', selectedMaterial);
+        } else {
+            // Fallback for products like Bed Sheets where colors and sizes are top-level
+            setColorOptions(
+                productType?.validColors?.map((color: string) => ({ label: color, value: color })) || []
+            );
+            setSizeOptions(
+                productType?.validSizes?.map((size: string) => ({ label: size, value: size })) || []
+            );
+            console.log('Top-level options set.');
+        }
+    
+        // Set material options for the dropdown
+        if (productType?.materials) {
+            const materials = Object.keys(productType.materials).map((material) => ({
+                label: material,
+                value: material,
+            }));
+            setMaterialOptions(materials);
+        } else {
+            setMaterialOptions([]);
+        }
+    };
+    */
 
     const onProductChange = (e: { value: string }) => {
         const selectedProduct = e.value;
-        let updatedProduct = { ...product, product: selectedProduct, color: '' };
-        // Default to Bamboo for Bed Sheets
-        if (selectedProduct === 'Bed Sheets') {
-            updatedProduct.material = 'Bamboo';
-        }
-
-        setProduct(updatedProduct);
-        setColorOptions(colorOptionsByProduct[selectedProduct] || []);
-        setSizeOptions(sizeOptionsByProduct[selectedProduct] || []);
+        console.log('Selected product:', selectedProduct);
+    
+        setProduct((prev) => ({
+            ...prev,
+            product: selectedProduct,
+            material: '', // Reset material
+            color: '', // Reset color
+            size: '', // Reset size
+        }));
+    
+        // Load color and size options dynamically
+        setDynamicOptions(selectedProduct);
     };
     
-        const onInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | DropdownChangeEvent, name: keyof Product) => {
-        const val = (e as DropdownChangeEvent).value || (e.target as HTMLInputElement).value || '';
-        let _product = { ...product };
-        _product[name] = val as any;
-        setProduct(_product);
+    
+    const onInputChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | DropdownChangeEvent,
+        name: keyof Product
+    ) => {
+        const val =
+            'value' in e
+                ? e.value // For PrimeReact Dropdown
+                : (e.target as HTMLInputElement | HTMLTextAreaElement)?.value; // For InputText
+    
+        setProduct((prev) => ({
+            ...prev,
+            [name]: val,
+        }));
     };
 
     const findIndexById = (id: string) => {
@@ -252,6 +504,23 @@ const Crud = () => {
         }
         return index;
     };
+
+    const onMaterialChange = (e: DropdownChangeEvent) => {
+        const selectedMaterial = e.value;
+        console.log('Selected material:', selectedMaterial);
+    
+        // Update the product's material first
+        setProduct((prev) => ({
+            ...prev,
+            material: selectedMaterial,
+            color: '', // Reset color to ensure consistency
+            size: '',  // Reset size to ensure consistency
+        }));
+    
+        // Call setDynamicOptions with the updated material
+        setDynamicOptions(product.product, selectedMaterial);
+    };
+    
 
     const createId = () => {
         let id = '';
@@ -270,57 +539,120 @@ const Crud = () => {
     //Single Delete
     const deleteProduct = async () => {
         try {
-            // Remove the product from Firestore first
-            await ProductService.deleteProduct(product.id);
+            
+            if (!product.firestoreId) {
+                console.error('No Firestore ID found for the product. Cannot proceed with deletion.');
+                return;
+            }
+
+            console.log('Attempting to delete product with Firestore ID:', product.firestoreId);
+
+            // Remove the product from Firestore
+            await ProductService.deleteProduct(product.firestoreId);
 
             // Then remove it from the local state
-            let _products = products.filter((val) => val.id !== product.id);
+            const _products = products.filter((val) => val.firestoreId !== product.firestoreId);
             setProducts(_products);
+
             setDeleteProductDialog(false);
             setProduct(emptyProduct);
+
             if (toast.current) {
-                toast.current.show({ severity: 'success', summary: 'Successful', detail: '1 Product Deleted', life: 3000 });
+                toast.current.show({ 
+                    severity: 'success', 
+                    summary: 'Successful',
+                    detail: '1 Product Deleted', 
+                    life: 3000 
+                });
             }
         } catch (error) {
             console.error('Error deleting product:', error);
+            
             if (toast.current) {
-                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete product', life: 3000 });
+                toast.current.show({ 
+                    severity: 'error', 
+                    summary: 'Error', 
+                    detail: 'Failed to delete product', 
+                    life: 3000 
+                });
             }
         }
+        await fetchProducts();
     };
 
-    //Bulk Delete
+
+   
+    // Bulk Delete
     const deleteSelectedProducts = async () => {
         try {
-            // Remove products from Firestore first
-            for (const selectedProduct of selectedProducts) {
-                await ProductService.deleteProduct(selectedProduct.id); // Ensure each selected product is deleted from Firestore
+            if (!selectedProducts || selectedProducts.length === 0) {
+                console.warn('No products selected for deletion.');
+                return;
             }
 
-            // Then remove the products from the local state
-            let _products = products.filter((val) => !selectedProducts.includes(val));
-            const deletedCount = selectedProducts.length; // Count how many products were deleted
-            setProducts(_products);
-            setDeleteProductsDialog(false);
-            setSelectedProducts([]);
-            if (toast.current) {
-                toast.current.show({ severity: 'success', summary: 'Successful', detail: `${deletedCount} Products Deleted`, life: 3000 });
+            // Remove products from Firestore
+            for (const selectedProduct of selectedProducts) {
+                if (selectedProduct.firestoreId) {
+                    await ProductService.deleteProduct(selectedProduct.firestoreId);
+                } else {
+                    console.warn(`Skipping product with missing Firestore ID:`, selectedProduct);
+                }
             }
-        } catch (error) {
-            console.error('Error deleting products:', error);
-            if (toast.current) {
-                toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to delete products', life: 3000 });
-            }
+
+        // Then remove the products from the local state
+        const _products = products.filter((val) => !selectedProducts.some(sp => sp.firestoreId === val.firestoreId));
+        setProducts(_products);
+
+        const deletedCount = selectedProducts.length; // Count how many products were deleted
+        setDeleteProductsDialog(false);
+        setSelectedProducts([]);
+
+        if (toast.current) {
+            toast.current.show({ 
+                severity: 'success', 
+                summary: 'Successful', 
+                detail: `${deletedCount} Products Deleted`, 
+                life: 3000 
+            });
         }
-    };
+    } catch (error) {
+        console.error('Error deleting products:', error);
+
+        if (toast.current) {
+            toast.current.show({ 
+                severity: 'error', 
+                summary: 'Error', 
+                detail: 'Failed to delete products', 
+                life: 3000 
+            });
+        }
+    }
+    await fetchProducts();
+};
+
 
     const editProduct = (product: Product) => {
-        // Set the product, color ,and size dropdown options based on the product type
+        console.log('Editing product:', product);
+    
         setProduct({ ...product });
-        setColorOptions(colorOptionsByProduct[product.product] || []);
-        setSizeOptions(sizeOptionsByProduct[product.product] || []);
+    
+        // Use dynamic options based on current material
+        setDynamicOptions(product.product);
         setProductDialog(true);
     };
+    
+
+
+    //OG
+    /*
+    const editProduct = (product: Product) => {
+        console.log('Editing product:', product);
+
+        setProduct({ ...product }); // Set product to be edited
+        setDynamicOptions(product.product); // Update dropdown options dynamically
+        setProductDialog(true); // Open dialog
+    };
+    */
 
     const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -404,6 +736,8 @@ const Crud = () => {
                 toast.current.show({ severity: 'error', summary: 'Error', detail: 'Failed to upload products', life: 3000 });
             }
         }
+
+        await fetchProducts();
     };
 
     const openBulkUpload = () => setBulkUploadDialog(true); // Function for opening bulk upload dialog
@@ -424,7 +758,10 @@ const Crud = () => {
             <h5 className="m-0">Manage Products</h5>
             <span className="block mt-2 md:mt-0 p-input-icon-left">
                 <i className="pi pi-search" />
-                <InputText type="search" onInput={(e) => setGlobalFilter(e.currentTarget.value)} placeholder="Search..." />
+                <InputText 
+                    type="search" 
+                    onInput={(e) => setGlobalFilter(e.currentTarget.value)} 
+                    placeholder="Search..." />
             </span>
         </div>
     );
@@ -476,7 +813,10 @@ const Crud = () => {
                         rows={10}
                         rowsPerPageOptions={[5, 10, 25]}
                         currentPageReportTemplate="Showing {first} to {last} of {totalRecords} products"
-                        globalFilter={globalFilter}
+                        filters={{
+                            global: { value: globalFilter, matchMode: 'contains' },
+                        }}
+                        globalFilterFields={['product', 'material', 'color', 'size', 'sku', 'asin', 'upc']} // Specify searchable field
                         emptyMessage="No products found."
                         header={header}
                         responsiveLayout="scroll"
@@ -496,18 +836,26 @@ const Crud = () => {
                     <Dialog visible={productDialog} style={{ width: '450px' }} header="Product Details" modal className="p-fluid" footer={productDialogFooter} onHide={hideDialog}>
                         <div className="field">
                             <label htmlFor="product">Product</label>
-                            <Dropdown id="product" value={product.product} options={productOptions} onChange={onProductChange} placeholder="Select a Product" className={classNames({ 'p-invalid': submitted && !product.product })} />
+                            <Dropdown 
+                                id="product" 
+                                value={product.product} 
+                                options={productOptions} 
+                                onChange={onProductChange} 
+                                placeholder="Select a Product" 
+                                className={classNames({ 'p-invalid': submitted && !product.product })} 
+                                />
                             {submitted && !product.product && <small className="p-invalid">Product is required.</small>}
                         </div>
 
-                        {product.product === 'Pillowcase' && (
+                        {/* Render Material dropdown only when materialOptions are available */}
+                        {materialOptions.length > 0 && (
                             <div className="field">
                                 <label htmlFor="material">Material</label>
                                 <Dropdown
                                     id="material"
                                     value={product.material}
                                     options={materialOptions}
-                                    onChange={(e) => onInputChange(e, 'material')}
+                                    onChange={onMaterialChange}
                                     placeholder="Select a Material"
                                     className={classNames({ 'p-invalid': submitted && !product.material })}
                                 />
@@ -517,13 +865,26 @@ const Crud = () => {
 
                         <div className="field">
                             <label htmlFor="color">Color</label>
-                            <Dropdown id="color" value={product.color} options={colorOptions} onChange={(e) => onInputChange(e, 'color')} placeholder="Select a Color" className={classNames({ 'p-invalid': submitted && !product.color })} />
+                            <Dropdown 
+                                id="color" 
+                                value={product.color} 
+                                options={colorOptions} 
+                                onChange={(e) => onInputChange(e, 'color')} 
+                                placeholder="Select a Color" 
+                                className={classNames({ 'p-invalid': submitted && !product.color })} 
+                            />
                             {submitted && !product.color && <small className="p-invalid">Color is required.</small>}
                         </div>
 
                         <div className="field">
                             <label htmlFor="size">Size</label>
-                            <Dropdown id="size" value={product.size} options={sizeOptions} onChange={(e) => onInputChange(e, 'size')} placeholder="Select a Size" className={classNames({ 'p-invalid': submitted && !product.size })} />
+                            <Dropdown 
+                                id="size" value={product.size} 
+                                options={sizeOptions} 
+                                onChange={(e) => onInputChange(e, 'size')} 
+                                placeholder="Select a Size" 
+                                className={classNames({ 'p-invalid': submitted && !product.size })} 
+                            />
                             {submitted && !product.size && <small className="p-invalid">Size is required.</small>}
                         </div>
 
