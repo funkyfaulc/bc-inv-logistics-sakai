@@ -21,5 +21,6 @@ export interface InventoryRecord {
     createdAt: Date; // Record creation timestamp
     updatedAt: Date; // Last updated timestamp
     notes?: string; // Additional notes
+    totalUnits?: number;
     //sourceFileName?: string; // Removed 1-24-25
 }

@@ -20,13 +20,9 @@ const InventoryUpload = () => {
     const FBA_COLUMN_MAP = {
         asin: 3,
         sku: 1,
-        available: 6,
-        reserved_fc_transfer: 93,
-        reserved_fc_processing: 94,
-        reserved_customer_order: 95,
-        inbound_working: 89,
-        inbound_shipped: 90,
-        inbound_received: 91,
+        fba: 6,
+        inbound_to_fba: 89,
+        reserved_units: 95,
     };
 
     const AWD_COLUMN_MAP = {
@@ -34,8 +30,6 @@ const InventoryUpload = () => {
         sku: 1,
         inbound_to_awd: 4,
         awd: 6,
-        reserved_awd: 8,
-        outbound_to_fba: 10,
     };
 
     const openInventoryUpload = () => setInventoryUploadDialog(true);
@@ -80,7 +74,8 @@ const InventoryUpload = () => {
             console.log('Merged Records:', mergedRecords);
 
             for (const record of mergedRecords) {
-                await InventoryRecordsService.addInventoryRecord(record);
+                console.log(`Updating asin: ${record.asin}, sku: ${record.sku}, SnapshotDate: ${record.snapshotDate}`);
+                await InventoryRecordsService.updateInventoryRecordByAsin(record.asin, record);
             }
 
             toast.current?.show({ severity: 'success', summary: 'Upload Successful', detail: 'Inventory records updated.', life: 3000 });
@@ -93,9 +88,9 @@ const InventoryUpload = () => {
 
     const mergeFbaAndAwdData = async (fbaData: string[][], awdData: string[][]): Promise<InventoryRecord[]> => {
         const existingProducts: Product[] = await ProductService.getProducts();
-        const productMap = new Map(existingProducts.map((product) => [product.asin, product]));
+        const productMap = new Map(existingProducts.map((product) => [product.asin, product.sku || "Unknown SKU"]));
 
-        const recordsMap: Record<string, InventoryRecord> = {};
+        const recordsMap = new Map<string, InventoryRecord>();
 
         const parseInteger = (value: string, defaultValue: number = 0): number => {
             const parsed = parseInt(value, 10);
@@ -103,88 +98,61 @@ const InventoryUpload = () => {
         };
 
         for (const row of fbaData) {
-            const asin = row[FBA_COLUMN_MAP.asin];
+            const asin = row[FBA_COLUMN_MAP.asin]?.trim();
             if (!asin) continue;
 
-            if (!productMap.has(asin)) {
-                await ProductService.addProduct({
-                    asin,
-                    sku: row[FBA_COLUMN_MAP.sku] || '',
-                    product: 'Unknown',
-                    size: 'Unknown',
-                    material: 'Unknown',
-                    color: 'Unknown',
-                    upc: '',
-                });
-            }
+            let sku = row[FBA_COLUMN_MAP.sku]?.trim() || productMap.get(asin) || "Unknown SKU";
 
-            if (!recordsMap[asin]) {
-                recordsMap[asin] = {
+            if (!recordsMap.has(asin)) {
+                recordsMap.set(asin, {
                     asin,
-                    sku: row[FBA_COLUMN_MAP.sku],
-                    fba: parseInteger(row[FBA_COLUMN_MAP.available] || '0'),
-                    inbound_to_fba: parseInteger(row[FBA_COLUMN_MAP.inbound_working] || '0'),
-                    reserved_units: 0,
-                    breakdown: {
-                        reserved_fc_transfer: parseInteger(row[FBA_COLUMN_MAP.reserved_fc_transfer] || '0'),
-                        reserved_fc_processing: parseInteger(row[FBA_COLUMN_MAP.reserved_fc_processing] || '0'),
-                        reserved_customer_order: parseInteger(row[FBA_COLUMN_MAP.reserved_customer_order] || '0'),
-                        inbound_working: parseInteger(row[FBA_COLUMN_MAP.inbound_working] || '0'),
-                        inbound_shipped: parseInteger(row[FBA_COLUMN_MAP.inbound_shipped] || '0'),
-                        inbound_received: parseInteger(row[FBA_COLUMN_MAP.inbound_received] || '0'),
-                    },
+                    sku,
+                    fba: parseInteger(row[FBA_COLUMN_MAP.fba]),
+                    inbound_to_fba: parseInteger(row[FBA_COLUMN_MAP.inbound_to_fba]),
+                    reserved_units: parseInteger(row[FBA_COLUMN_MAP.reserved_units]),
                     awd: 0,
                     inbound_to_awd: 0,
                     snapshotDate: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     notes: '',
-                };
+                });
             }
         }
 
         for (const row of awdData) {
-            const asin = row[AWD_COLUMN_MAP.asin];
+            const asin = row[AWD_COLUMN_MAP.asin]?.trim();
             if (!asin) continue;
 
-            if (!recordsMap[asin]) {
-                recordsMap[asin] = {
+            let sku = row[AWD_COLUMN_MAP.sku]?.trim() || productMap.get(asin) || "Unknown SKU";
+
+            if (!recordsMap.has(asin)) {
+                recordsMap.set(asin, {
                     asin,
-                    sku: row[AWD_COLUMN_MAP.sku],
+                    sku,
                     fba: 0,
                     inbound_to_fba: 0,
                     reserved_units: 0,
-                    breakdown: {
-                        reserved_fc_transfer: 0,
-                        reserved_fc_processing: 0,
-                        reserved_customer_order: 0,
-                        inbound_working: 0,
-                        inbound_shipped: 0,
-                        inbound_received: 0,
-                    },
-                    awd: parseInteger(row[AWD_COLUMN_MAP.awd] || '0'),
-                    inbound_to_awd: parseInteger(row[AWD_COLUMN_MAP.inbound_to_awd] || '0'),
+                    awd: parseInteger(row[AWD_COLUMN_MAP.awd]),
+                    inbound_to_awd: parseInteger(row[AWD_COLUMN_MAP.inbound_to_awd]),
                     snapshotDate: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     notes: '',
-                };
+                });
             } else {
-                const record = recordsMap[asin];
-                if (record) {
-                    if (record) {
-                        if (record.awd !== undefined) {
-                            record.awd += parseInteger(row[AWD_COLUMN_MAP.awd] || '0');
-                        }
-                    }
-                    if (record.inbound_to_awd !== undefined) {
-                        record.inbound_to_awd += parseInteger(row[AWD_COLUMN_MAP.inbound_to_awd] || '0');
-                    }
-                }
+                const existingRecord = recordsMap.get(asin)!;
+                existingRecord.awd = parseInteger(row[AWD_COLUMN_MAP.awd], existingRecord.awd);
+                existingRecord.inbound_to_awd = parseInteger(row[AWD_COLUMN_MAP.inbound_to_awd], existingRecord.inbound_to_awd);
             }
         }
 
-        return Object.values(recordsMap);
+        // ✅ Calculate total units for each record
+        recordsMap.forEach((record) => {
+            record.totalUnits = (record.fba || 0) + (record.inbound_to_fba || 0) + (record.awd || 0) + (record.inbound_to_awd || 0);
+        });
+
+        return Array.from(recordsMap.values());
     };
 
     return (
