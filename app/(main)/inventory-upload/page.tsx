@@ -1,5 +1,3 @@
-//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/inventory-upload/page.tsx
-
 'use client';
 
 import React, { useRef, useState } from 'react';
@@ -8,11 +6,10 @@ import { InputText } from 'primereact/inputtext';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
 import Papa from 'papaparse';
-import { InventoryRecordsService } from '../../../demo/services/InventoryRecordsService'; // Adjust path if needed
+import { InventoryRecordsService } from '../../../demo/services/InventoryRecordsService';
 import ProductService from '../../../demo/services/ProductService';
 import { InventoryRecord } from '../../../types/inventoryRecords';
-import { Timestamp } from 'firebase/firestore';
-
+import { Product } from '../../../types/products';
 
 const InventoryUpload = () => {
     const [inventoryUploadDialog, setInventoryUploadDialog] = useState(false);
@@ -20,13 +17,53 @@ const InventoryUpload = () => {
     const [awdFile, setAwdFile] = useState<File | null>(null);
     const toast = useRef<Toast>(null);
 
+    const FBA_COLUMN_MAP = {
+        asin: 3,
+        sku: 1,
+        available: 6,
+        reserved_fc_transfer: 93,
+        reserved_fc_processing: 94,
+        reserved_customer_order: 95,
+        inbound_working: 89,
+        inbound_shipped: 90,
+        inbound_received: 91,
+    };
+
+    const AWD_COLUMN_MAP = {
+        asin: 3,
+        sku: 1,
+        inbound_to_awd: 4,
+        awd: 6,
+        reserved_awd: 8,
+        outbound_to_fba: 10,
+    };
+
     const openInventoryUpload = () => setInventoryUploadDialog(true);
     const hideInventoryUploadDialog = () => setInventoryUploadDialog(false);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'fba' | 'awd') => {
-        const file = e.target.files?.[0] || null; //default to null if no file selected
+        const file = e.target.files?.[0] || null;
         if (type === 'fba') setFbaFile(file);
         else if (type === 'awd') setAwdFile(file);
+    };
+
+    const parseCsvFileAsArray = (file: File, skipRows: number = 0): Promise<string[][]> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const csvData = reader.result as string;
+                const lines = csvData.split(/\r?\n/).slice(skipRows);
+                const dataToParse = lines.join('\n');
+                Papa.parse(dataToParse, {
+                    header: false,
+                    skipEmptyLines: true,
+                    complete: (results) => resolve(results.data as string[][]),
+                    error: (err: unknown) => reject(err),
+                });
+            };
+            reader.onerror = () => reject(reader.error);
+            reader.readAsText(file);
+        });
     };
 
     const handleUpload = async () => {
@@ -36,10 +73,12 @@ const InventoryUpload = () => {
         }
 
         try {
-            const fbaData = await parseCsvFile(fbaFile);
-            const awdData = await parseCsvFile(awdFile);
+            const fbaData = await parseCsvFileAsArray(fbaFile, 1);
+            const awdData = await parseCsvFileAsArray(awdFile, 1);
 
             const mergedRecords = await mergeFbaAndAwdData(fbaData, awdData);
+            console.log('Merged Records:', mergedRecords);
+
             for (const record of mergedRecords) {
                 await InventoryRecordsService.addInventoryRecord(record);
             }
@@ -52,132 +91,101 @@ const InventoryUpload = () => {
         }
     };
 
-    const parseCsvFile = (file: File): Promise<any[]> => {
-        return new Promise((resolve, reject) => {
-            Papa.parse(file, {
-                header: true,
-                complete: (results) => resolve(results.data),
-                error: (err) => reject(err),
-            });
-        });
-    };
-
-    const mergeFbaAndAwdData = async (fbaData: any[], awdData: any[]): Promise<InventoryRecord[]> => {
-        // Fetch existing products to create a product map
-        const existingProducts = await ProductService.getProducts();
+    const mergeFbaAndAwdData = async (fbaData: string[][], awdData: string[][]): Promise<InventoryRecord[]> => {
+        const existingProducts: Product[] = await ProductService.getProducts();
         const productMap = new Map(existingProducts.map((product) => [product.asin, product]));
-    
+
         const recordsMap: Record<string, InventoryRecord> = {};
-    
-        // Process FBA data
+
+        const parseInteger = (value: string, defaultValue: number = 0): number => {
+            const parsed = parseInt(value, 10);
+            return isNaN(parsed) ? defaultValue : parsed;
+        };
+
         for (const row of fbaData) {
-            const asin = row.asin;
+            const asin = row[FBA_COLUMN_MAP.asin];
             if (!asin) continue;
-    
-            // Check if ASIN exists in product dictionary
+
             if (!productMap.has(asin)) {
-                console.log(`ASIN ${asin} not found in product dictionary. Adding new entry.`);
                 await ProductService.addProduct({
                     asin,
-                    sku: row.sku || '',
-                    product: 'Unknown', // Placeholder, update later if necessary
+                    sku: row[FBA_COLUMN_MAP.sku] || '',
+                    product: 'Unknown',
                     size: 'Unknown',
                     material: 'Unknown',
                     color: 'Unknown',
                     upc: '',
                 });
-                // Refresh the product map
-                productMap.set(asin, {
-                    id: '', // Placeholder for Firestore auto-generated ID
-                    asin,
-                    sku: row.sku || '',
-                    product: 'Unknown', // Placeholder value
-                    size: 'Unknown', // Placeholder value
-                    material: 'Unknown', // Placeholder value
-                    color: 'Unknown', // Placeholder value
-                    upc: '', // Placeholder value
-                    created_at: Timestamp.now(), // Placeholder value
-                    updated_at: Timestamp.now(), // Placeholder value
-                });
-                            }
-    
+            }
+
             if (!recordsMap[asin]) {
                 recordsMap[asin] = {
                     asin,
-                    sku: row.sku || undefined,
-                    fba: parseInt(row.available_quantity || '0', 10),
-                    inbound_to_fba: parseInt(row.inbound_quantity || '0', 10),
-                    reserved_units: parseInt(row.reserved_quantity || '0', 10),
+                    sku: row[FBA_COLUMN_MAP.sku],
+                    fba: parseInteger(row[FBA_COLUMN_MAP.available] || '0'),
+                    inbound_to_fba: parseInteger(row[FBA_COLUMN_MAP.inbound_working] || '0'),
+                    reserved_units: 0,
                     breakdown: {
-                        reserved_fc_transfer: parseInt(row.reserved_fc_transfer || '0', 10),
-                        reserved_fc_processing: parseInt(row.reserved_fc_processing || '0', 10),
-                        reserved_customer_order: parseInt(row.reserved_customer_order || '0', 10),
-                        inbound_working: parseInt(row.inbound_working || '0', 10),
-                        inbound_shipped: parseInt(row.inbound_shipped || '0', 10),
-                        inbound_received: parseInt(row.inbound_received || '0', 10),
+                        reserved_fc_transfer: parseInteger(row[FBA_COLUMN_MAP.reserved_fc_transfer] || '0'),
+                        reserved_fc_processing: parseInteger(row[FBA_COLUMN_MAP.reserved_fc_processing] || '0'),
+                        reserved_customer_order: parseInteger(row[FBA_COLUMN_MAP.reserved_customer_order] || '0'),
+                        inbound_working: parseInteger(row[FBA_COLUMN_MAP.inbound_working] || '0'),
+                        inbound_shipped: parseInteger(row[FBA_COLUMN_MAP.inbound_shipped] || '0'),
+                        inbound_received: parseInteger(row[FBA_COLUMN_MAP.inbound_received] || '0'),
                     },
-                    snapshotDate: new Date(row.snapshot_date || Date.now()),
+                    awd: 0,
+                    inbound_to_awd: 0,
+                    snapshotDate: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     notes: '',
                 };
             }
         }
-    
-        // Process AWD data
+
         for (const row of awdData) {
-            const asin = row.asin;
+            const asin = row[AWD_COLUMN_MAP.asin];
             if (!asin) continue;
-    
-            // Ensure ASIN exists in the product dictionary
-            if (!productMap.has(asin)) {
-                console.log(`ASIN ${asin} not found in product dictionary. Adding new entry.`);
-                await ProductService.addProduct({
-                    asin,
-                    sku: row.sku || '',
-                    product: 'Unknown', // Placeholder, update later if necessary
-                    size: 'Unknown',
-                    material: 'Unknown',
-                    color: 'Unknown',
-                    upc: '',
-                });
-                productMap.set(asin, {
-                    id: '', // Placeholder for Firestore auto-generated ID
-                    asin,
-                    sku: row.sku || '',
-                    product: 'Unknown', // Placeholder value
-                    size: 'Unknown', // Placeholder value
-                    material: 'Unknown', // Placeholder value
-                    color: 'Unknown', // Placeholder value
-                    upc: '', // Placeholder value
-                    created_at: Timestamp.now(), // Placeholder value
-                    updated_at: Timestamp.now(), // Placeholder value
-                });
-                            }
-    
+
             if (!recordsMap[asin]) {
                 recordsMap[asin] = {
                     asin,
-                    sku: row.sku || undefined,
-                    fba: 0, //Default value
-                    inbound_to_fba: 0, //Default value
-                    reserved_units: 0, //Default value 
-                    awd: parseInt(row.awd_quantity || '0', 10),
-                    inbound_to_awd: parseInt(row.inbound_to_awd || '0', 10),
-                    snapshotDate: new Date(row.snapshot_date || Date.now()),
+                    sku: row[AWD_COLUMN_MAP.sku],
+                    fba: 0,
+                    inbound_to_fba: 0,
+                    reserved_units: 0,
+                    breakdown: {
+                        reserved_fc_transfer: 0,
+                        reserved_fc_processing: 0,
+                        reserved_customer_order: 0,
+                        inbound_working: 0,
+                        inbound_shipped: 0,
+                        inbound_received: 0,
+                    },
+                    awd: parseInteger(row[AWD_COLUMN_MAP.awd] || '0'),
+                    inbound_to_awd: parseInteger(row[AWD_COLUMN_MAP.inbound_to_awd] || '0'),
+                    snapshotDate: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     notes: '',
                 };
             } else {
-                recordsMap[asin].awd = parseInt(row.awd_quantity || '0', 10);
-                recordsMap[asin].inbound_to_awd = parseInt(row.inbound_to_awd || '0', 10);
+                const record = recordsMap[asin];
+                if (record) {
+                    if (record) {
+                        if (record.awd !== undefined) {
+                            record.awd += parseInteger(row[AWD_COLUMN_MAP.awd] || '0');
+                        }
+                    }
+                    if (record.inbound_to_awd !== undefined) {
+                        record.inbound_to_awd += parseInteger(row[AWD_COLUMN_MAP.inbound_to_awd] || '0');
+                    }
+                }
             }
         }
-    
+
         return Object.values(recordsMap);
     };
-    
 
     return (
         <div className="grid crud-demo">

@@ -31,6 +31,12 @@ const AppMenu = () => {
                 },
 
                 {
+                    label: 'Inventory',
+                    icon: 'pi pi-fw pi-database',
+                    to: '/inventory-upload'
+                },
+
+                {
                     label: 'EOM Inventory',
                     icon: 'pi pi-fw pi-chart-line',
                     to: '/reporting/'

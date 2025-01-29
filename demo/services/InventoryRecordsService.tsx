@@ -1,4 +1,4 @@
-//bc-inventory-logistics-app/bc-inv-logistics-sakai/demo/services/InventoryRecordsService.tsx
+// bc-inventory-logistics-app/bc-inv-logistics-sakai/demo/services/InventoryRecordsService.tsx
 
 import { collection, getDocs, getDoc, addDoc, updateDoc, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../../app/firebase';
@@ -10,12 +10,30 @@ export const InventoryRecordsService = {
     async addInventoryRecord(record: InventoryRecord): Promise<void> {
         try {
             const totalUnits = record.breakdown
-            ? Object.values(record.breakdown).reduce((sum, count) => sum + (count || 0), 0) 
-            : 0; //default to 0 if breakdown is not provided
+                ? Object.values(record.breakdown).reduce((sum, count) => sum + (count || 0), 0) 
+                : 0; // default to 0 if breakdown is not provided
+
+            // Sanitize the record by removing undefined fields
+            const sanitizedRecord = Object.fromEntries(
+                Object.entries(record).filter(([_, value]) => value !== undefined)
+            );
+
+            // Optionally, set fields to null instead of omitting them
+            // const sanitizedRecord = {};
+            // Object.entries(record).forEach(([key, value]) => {
+            //     if (value !== undefined) {
+            //         sanitizedRecord[key] = value;
+            //     } else {
+            //         sanitizedRecord[key] = null;
+            //     }
+            // });
+
             await addDoc(inventoryCollection, {
-                ...record,
+                ...sanitizedRecord,
                 totalUnits,
-                snapshotDate: record.snapshotDate || Timestamp.now(), //Use provided date or default snaphot date
+                snapshotDate: sanitizedRecord.snapshotDate instanceof Date 
+                    ? Timestamp.fromDate(sanitizedRecord.snapshotDate) 
+                    : Timestamp.now(), // Use provided date or default snapshot date
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             });
@@ -52,13 +70,13 @@ export const InventoryRecordsService = {
             };
 
             const updatedFields = {
-                ...updates, //Include top-level updates like `fba`
-                breakdown: newBreakdown, //Updated breakdown
-                updatedAt: Timestamp.now(), //Update timestamp
+                ...updates, // Include top-level updates like `fba`
+                breakdown: newBreakdown, // Updated breakdown
+                updatedAt: Timestamp.now(), // Update timestamp
                 notes,
             };
                         
-            await updateDoc(docRef,updatedFields);
+            await updateDoc(docRef, updatedFields);
             
             console.log('Inventory record updated successfully!');
         } catch (error) {

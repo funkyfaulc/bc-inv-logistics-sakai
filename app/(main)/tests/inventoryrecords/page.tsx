@@ -30,7 +30,7 @@ const TestInventoryRecords = () => {
                     createdAt: new Date(),
                     updatedAt: new Date(),
                     notes: 'Initial test record',
-                    sourceFileName: 'FBA-Report-2024.csv',
+                    //sourceFileName: 'FBA-Report-2024.csv',
                 });
                 console.log('Record added successfully!');
 
