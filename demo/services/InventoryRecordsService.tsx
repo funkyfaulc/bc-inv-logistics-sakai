@@ -7,14 +7,20 @@ const inventoryCollection = collection(db, 'inventory_records');
 export const InventoryRecordsService = {
     async addInventoryRecord(record: InventoryRecord): Promise<void> {
         try {
-            const totalUnits = record.breakdown
-                ? Object.values(record.breakdown).reduce((sum, count) => sum + (count || 0), 0) 
-                : 0;
+            const totalUnits = (record.fba || 0) +
+                   (record.inbound_to_fba || 0) +
+                   (record.awd || 0) +
+                   (record.inbound_to_awd || 0) +
+                   (record.reserved_units || 0);  // ✅ Corrected version
 
                 const sanitizedRecord = Object.fromEntries(
                     Object.entries({
                         ...record,
-                        totalUnits // 🔹 Ensure totalUnits is explicitly included
+                        totalUnits, // 🔹 Ensure totalUnits is explicitly included
+                        reserved_units: record.reserved_units || 0,
+                        reserved_fc_transfer: record.reserved_fc_transfer || 0,
+                        reserved_fc_processing: record.reserved_fc_processing || 0,
+                        reserved_customer_order: record.reserved_customer_order || 0,
                     }).filter(([_, value]) => value !== undefined)
                 );
 
@@ -62,14 +68,9 @@ export const InventoryRecordsService = {
 
             const existingData = snapshot.data() as InventoryRecord;
 
-            const newBreakdown = {
-                ...existingData.breakdown,
-                ...(updates.breakdown || {}), 
-            };
 
             const updatedFields = {
                 ...updates,
-                breakdown: newBreakdown,
                 updatedAt: Timestamp.now(),
                 notes: notes !== undefined ? notes : existingData.notes || '',
             };
@@ -95,20 +96,19 @@ export const InventoryRecordsService = {
                 const docRef = doc(db, 'inventory_records', snapshot.docs[0].id);
                 const existingData = snapshot.docs[0].data() as InventoryRecord;
     
-                const newBreakdown = {
-                    ...existingData.breakdown,
-                    ...(updates.breakdown || {}),
-                };
-    
-                const totalUnits = (updates.fba || existingData.fba || 0) +
-                   (updates.inbound_to_fba || existingData.inbound_to_fba || 0) +
-                   (updates.awd || existingData.awd || 0) +
-                   (updates.inbound_to_awd || existingData.inbound_to_awd || 0);
+                const totalUnits = (updates.fba ?? existingData.fba ?? 0) +
+                   (updates.inbound_to_fba ?? existingData.inbound_to_fba ?? 0) +
+                   (updates.awd ?? existingData.awd ?? 0) +
+                   (updates.inbound_to_awd ?? existingData.inbound_to_awd ?? 0) +
+                   (updates.reserved_units ?? existingData.reserved_units ?? 0)
 
                 const updatedFields: any = {
                     ...updates,
-                    breakdown: newBreakdown,
                     totalUnits,
+                    reserved_units: updates.reserved_units || existingData.reserved_units || 0,
+                    reserved_fc_transfer: updates.reserved_fc_transfer || existingData.reserved_fc_transfer || 0,
+                    reserved_fc_processing: updates.reserved_fc_processing || existingData.reserved_fc_processing || 0,
+                    reserved_customer_order: updates.reserved_customer_order || existingData.reserved_customer_order || 0,
                     updatedAt: Timestamp.now(),
                 };
 
@@ -134,7 +134,6 @@ export const InventoryRecordsService = {
                     fba: updates.fba || 0,
                     inbound_to_fba: updates.inbound_to_fba || 0,
                     reserved_units: updates.reserved_units || 0,
-                    breakdown: updates.breakdown || {},
                     snapshotDate: updates.snapshotDate || new Date(),
                     sku: updates.sku || '',
                     awd: updates.awd || 0,

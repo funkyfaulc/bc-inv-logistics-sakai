@@ -21,8 +21,11 @@ const InventoryUpload = () => {
         asin: 3,
         sku: 1,
         fba: 6,
-        inbound_to_fba: 89,
-        reserved_units: 95,
+        inbound_to_fba: 52,
+        reserved_units: 57,
+        reserved_fc_transfer: 85, 
+        reserved_fc_processing: 86, 
+        reserved_customer_order: 87, 
     };
 
     const AWD_COLUMN_MAP = {
@@ -110,6 +113,9 @@ const InventoryUpload = () => {
                     fba: parseInteger(row[FBA_COLUMN_MAP.fba]),
                     inbound_to_fba: parseInteger(row[FBA_COLUMN_MAP.inbound_to_fba]),
                     reserved_units: parseInteger(row[FBA_COLUMN_MAP.reserved_units]),
+                    reserved_fc_transfer: parseInteger(row[FBA_COLUMN_MAP.reserved_fc_transfer]),
+                    reserved_fc_processing: parseInteger(row[FBA_COLUMN_MAP.reserved_fc_processing]),
+                    reserved_customer_order: parseInteger(row[FBA_COLUMN_MAP.reserved_customer_order]),
                     awd: 0,
                     inbound_to_awd: 0,
                     snapshotDate: new Date(),
