@@ -1,3 +1,5 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/page.tsx
+
 /* eslint-disable @next/next/no-img-element */
 'use client';
 import { Button } from 'primereact/button';

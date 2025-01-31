@@ -1,6 +1,10 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/demo/services/InventoryRecordsService.tsx
+
 import { collection, getDocs, getDoc, addDoc, updateDoc, query, where, doc, Timestamp } from 'firebase/firestore';
 import { db } from '../../app/firebase';
 import { InventoryRecord } from '../../types/inventoryRecords';
+import { runTransaction } from 'firebase/firestore';
+import { writeBatch } from "firebase/firestore";
 
 const inventoryCollection = collection(db, 'inventory_records');
 
@@ -40,17 +44,22 @@ export const InventoryRecordsService = {
     },
 
     async getInventoryRecords(): Promise<InventoryRecord[]> {
-        const snapshot = await getDocs(inventoryCollection);
-        return snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate() || new Date(), // 🔹 Convert Firestore Timestamp to Date
-                updatedAt: data.updatedAt?.toDate() || new Date(), // 🔹 Convert Firestore Timestamp to Date
-                snapshotDate: data.snapshotDate?.toDate() || new Date(),
-            } as InventoryRecord;
-        });
+        try {
+            const snapshot = await getDocs(inventoryCollection);
+            return snapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                    createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
+                    updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
+                    snapshotDate: data.snapshotDate instanceof Timestamp ? data.snapshotDate.toDate() : new Date(),
+                } as InventoryRecord;
+            });
+        } catch (error) {
+            console.error("Error fetching inventory records:", error);
+            return [];
+        }
     },
 
     async updateInventoryRecord(
@@ -85,63 +94,145 @@ export const InventoryRecordsService = {
     // **NEW FUNCTION: Update by ASIN**
     async updateInventoryRecordByAsin(
         asin: string, 
-        updates: Partial<Omit<InventoryRecord, 'id' | 'createdAt' | 'updatedAt'>>,
+        updates: Partial<InventoryRecord>, 
         notes?: string
     ): Promise<void> {
         try {
-            const inventoryQuery = query(inventoryCollection, where('asin', '==', asin));
+            const inventoryQuery = query(inventoryCollection, where("asin", "==", asin));
             const snapshot = await getDocs(inventoryQuery);
     
             if (!snapshot.empty) {
-                const docRef = doc(db, 'inventory_records', snapshot.docs[0].id);
-                const existingData = snapshot.docs[0].data() as InventoryRecord;
+                const docRef = doc(db, "inventory_records", snapshot.docs[0].id);
+                await runTransaction(db, async (transaction) => {
+                    const docSnapshot = await transaction.get(docRef);
+                    if (!docSnapshot.exists()) return;
     
-                const totalUnits = (updates.fba ?? existingData.fba ?? 0) +
-                   (updates.inbound_to_fba ?? existingData.inbound_to_fba ?? 0) +
-                   (updates.awd ?? existingData.awd ?? 0) +
-                   (updates.inbound_to_awd ?? existingData.inbound_to_awd ?? 0) +
-                   (updates.reserved_units ?? existingData.reserved_units ?? 0)
-
-                const updatedFields: any = {
-                    ...updates,
-                    totalUnits,
-                    reserved_units: updates.reserved_units || existingData.reserved_units || 0,
-                    reserved_fc_transfer: updates.reserved_fc_transfer || existingData.reserved_fc_transfer || 0,
-                    reserved_fc_processing: updates.reserved_fc_processing || existingData.reserved_fc_processing || 0,
-                    reserved_customer_order: updates.reserved_customer_order || existingData.reserved_customer_order || 0,
-                    updatedAt: Timestamp.now(),
-                };
-
-                // Ensure 'notes' is handled correctly
-                updatedFields.notes = notes !== undefined ? notes : existingData.notes || '';
-
-                // Ensure multiple SKUs are stored correctly
-                if (updates.sku && existingData.sku && !existingData.sku.includes(updates.sku)) {
-                    updatedFields.sku = `${existingData.sku}, ${updates.sku}`;
-                } else {
-                    updatedFields.sku = updates.sku || existingData.sku;
-                }
+                    const existingData = docSnapshot.data() as InventoryRecord;
     
-                await updateDoc(docRef, updatedFields);
+                    const totalUnits = 
+                        (updates.fba ?? existingData.fba ?? 0) +
+                        (updates.inbound_to_fba ?? existingData.inbound_to_fba ?? 0) +
+                        (updates.awd ?? existingData.awd ?? 0) +
+                        (updates.inbound_to_awd ?? existingData.inbound_to_awd ?? 0) +
+                        (updates.reserved_units ?? existingData.reserved_units ?? 0);
+    
+                    transaction.update(docRef, {
+                        ...updates,
+                        totalUnits,
+                        reserved_units: updates.reserved_units ?? existingData.reserved_units ?? 0,
+                        reserved_fc_transfer: updates.reserved_fc_transfer ?? existingData.reserved_fc_transfer ?? 0,
+                        reserved_fc_processing: updates.reserved_fc_processing ?? existingData.reserved_fc_processing ?? 0,
+                        reserved_customer_order: updates.reserved_customer_order ?? existingData.reserved_customer_order ?? 0,
+                        updatedAt: Timestamp.now(),
+                        notes: notes !== undefined ? notes : existingData.notes || "",
+                    });
+                });
+    
                 console.log(`Inventory record updated for ASIN: ${asin}`);
             } else {
                 console.warn(`No inventory record found for ASIN: ${asin}, adding a new record.`);
                 await InventoryRecordsService.addInventoryRecord({
                     asin,
-                    notes: notes || '',
+                    notes: notes || "",
                     createdAt: Timestamp.now().toDate(),
                     updatedAt: Timestamp.now().toDate(),
                     fba: updates.fba || 0,
                     inbound_to_fba: updates.inbound_to_fba || 0,
                     reserved_units: updates.reserved_units || 0,
                     snapshotDate: updates.snapshotDate || new Date(),
-                    sku: updates.sku || '',
+                    sku: updates.sku || "",
                     awd: updates.awd || 0,
                     inbound_to_awd: updates.inbound_to_awd || 0,
                 });
             }
         } catch (error) {
-            console.error('Error updating inventory record by ASIN:', error);
+            console.error("Error updating inventory record by ASIN:", error);
+        }
+    },
+
+    async bulkUploadInventory(records: InventoryRecord[]): Promise<void> {
+        try {
+            console.time("Bulk Upload");
+    
+            // Step 1: Fetch all existing ASINs
+            const snapshot = await getDocs(inventoryCollection);
+            const existingRecords = new Map<string, string>(); // ASIN → Firestore Doc ID
+    
+            snapshot.docs.forEach((doc) => {
+                const data = doc.data() as InventoryRecord;
+                if (data.asin) {
+                    existingRecords.set(data.asin, doc.id);
+                }
+            });
+    
+            console.log(`📌 Found ${existingRecords.size} existing inventory records.`);
+    
+            // Step 2: Prepare batch writes
+            const batch = writeBatch(db);
+            let batchCounter = 0;
+    
+            for (const record of records) {
+                if (!record.asin) {
+                    console.warn(`⚠️ Skipping record without ASIN:`, record);
+                    continue;
+                }
+    
+                let docRef;
+                let isUpdate = false;
+    
+                if (existingRecords.has(record.asin)) {
+                    // If ASIN exists, update the existing record
+                    docRef = doc(db, "inventory_records", existingRecords.get(record.asin)!);
+                    isUpdate = true;
+                } else {
+                    // If ASIN doesn't exist, create a new document
+                    docRef = doc(inventoryCollection);
+                }
+    
+                const totalUnits =
+                    (record.fba ?? 0) +
+                    (record.inbound_to_fba ?? 0) +
+                    (record.awd ?? 0) +
+                    (record.inbound_to_awd ?? 0) +
+                    (record.reserved_units ?? 0);
+    
+                const updatedFields = {
+                    ...record,
+                    totalUnits,
+                    updatedAt: Timestamp.now(),
+                    snapshotDate: record.snapshotDate ? Timestamp.fromDate(record.snapshotDate) : Timestamp.now(),
+                };
+    
+                if (isUpdate) {
+                    console.log(`🔄 Updating ASIN: ${record.asin}`);
+                    console.log("🔍 Existing Record:", existingRecords.get(record.asin));
+                    console.log("📌 New Values:", updatedFields);
+                } else {
+                    console.log(`🆕 Creating new record for ASIN: ${record.asin}`);
+                }
+    
+                batch.set(docRef, updatedFields, { merge: true });
+                batchCounter++;
+    
+                // Step 3: Firestore batch limit handling
+                if (batchCounter >= 500) {
+                    await batch.commit();
+                    console.log(`✅ Committed batch of 500 writes.`);
+                    batchCounter = 0;
+                }
+            }
+    
+            // Final commit if there are remaining writes
+            if (batchCounter > 0) {
+                await batch.commit();
+                console.log(`✅ Final batch committed.`);
+            }
+    
+            console.timeEnd("Bulk Upload");
+            console.log("✅ Bulk inventory upload/update complete.");
+        } catch (error) {
+            console.error("❌ Error in bulk inventory upload:", error);
         }
     }
+
 };

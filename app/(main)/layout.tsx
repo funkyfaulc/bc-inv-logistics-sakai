@@ -1,3 +1,5 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/layout.tsx
+
 import { Metadata } from 'next';
 import Layout from '../../layout/layout';
 import React from 'react';

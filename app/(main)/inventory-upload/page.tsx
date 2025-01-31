@@ -68,26 +68,25 @@ const InventoryUpload = () => {
             toast.current?.show({ severity: 'warn', summary: 'Missing Files', detail: 'Please upload both FBA and AWD files.', life: 3000 });
             return;
         }
-
+    
         try {
             const fbaData = await parseCsvFileAsArray(fbaFile, 1);
             const awdData = await parseCsvFileAsArray(awdFile, 1);
-
+    
             const mergedRecords = await mergeFbaAndAwdData(fbaData, awdData);
             console.log('Merged Records:', mergedRecords);
-
-            for (const record of mergedRecords) {
-                console.log(`Updating asin: ${record.asin}, sku: ${record.sku}, SnapshotDate: ${record.snapshotDate}`);
-                await InventoryRecordsService.updateInventoryRecordByAsin(record.asin, record);
-            }
-
+    
+            // ✅ Call the optimized batch upload function
+            await InventoryRecordsService.bulkUploadInventory(mergedRecords);
+    
             toast.current?.show({ severity: 'success', summary: 'Upload Successful', detail: 'Inventory records updated.', life: 3000 });
             hideInventoryUploadDialog();
         } catch (error) {
-            console.error('Error processing files:', error);
+            console.error('❌ Error processing files:', error);
             toast.current?.show({ severity: 'error', summary: 'Upload Failed', detail: 'An error occurred during processing.', life: 3000 });
         }
     };
+
 
     const mergeFbaAndAwdData = async (fbaData: string[][], awdData: string[][]): Promise<InventoryRecord[]> => {
         const existingProducts: Product[] = await ProductService.getProducts();
