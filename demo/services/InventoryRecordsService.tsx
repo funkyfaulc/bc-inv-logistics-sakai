@@ -5,6 +5,7 @@ import { db } from '../../app/firebase';
 import { InventoryRecord } from '../../types/inventoryRecords';
 import { runTransaction } from 'firebase/firestore';
 import { writeBatch } from "firebase/firestore";
+import { Product } from '../../types/products';
 
 const inventoryCollection = collection(db, 'inventory_records');
 
@@ -45,15 +46,39 @@ export const InventoryRecordsService = {
 
     async getInventoryRecords(): Promise<InventoryRecord[]> {
         try {
-            const snapshot = await getDocs(inventoryCollection);
-            return snapshot.docs.map((doc) => {
+            const inventorySnapshot = await getDocs(inventoryCollection);
+            const productSnapshot = await getDocs(collection(db, 'products_sk')); // Fetch products
+    
+            // Create a Map<ASIN, Product>
+            const productMap = new Map<string, Product>();
+            productSnapshot.docs.forEach((doc) => {
+                const data = doc.data() as Product;
+                if (data.asin) {
+                    productMap.set(data.asin, data);
+                }
+            });
+    
+            return inventorySnapshot.docs.map((doc) => {
                 const data = doc.data();
+                const productData = productMap.get(data.asin) || {} as Product;
+    
                 return {
                     id: doc.id,
-                    ...data,
+                    asin: data.asin || '',
+                    sku: data.sku || '',
+                    productType: productData.product || 'Uncategorized',  
+                    totalUnits: data.totalUnits ?? 0,
+                    fba: data.fba ?? 0,
+                    inbound_to_fba: data.inbound_to_fba ?? 0,
+                    awd: data.awd ?? 0,
+                    inbound_to_awd: data.inbound_to_awd ?? 0,
+                    reserved_units: data.reserved_units ?? 0,
+                    reserved_fc_transfer: data.reserved_fc_transfer ?? 0,
+                    reserved_fc_processing: data.reserved_fc_processing ?? 0,
+                    reserved_customer_order: data.reserved_customer_order ?? 0,
+                    snapshotDate: data.snapshotDate instanceof Timestamp ? data.snapshotDate.toDate() : new Date(),
                     createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(),
                     updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(),
-                    snapshotDate: data.snapshotDate instanceof Timestamp ? data.snapshotDate.toDate() : new Date(),
                 } as InventoryRecord;
             });
         } catch (error) {
