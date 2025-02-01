@@ -6,6 +6,7 @@ import { Button } from 'primereact/button';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { Dialog } from 'primereact/dialog';
+import { Dropdown } from 'primereact/dropdown';
 import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
@@ -17,6 +18,8 @@ import { useRouter } from 'next/navigation';
 import { Order } from '../../../types/orders';
 import { CalendarChangeEvent, InputChangeEvent, OrderInputEvent, OrderDateKey } from '@/types/events';
 import { Shipment } from '../../../types/orders';
+import { Tag } from 'primereact/tag';
+
 
 const OrderManagement = () => {
     const emptyOrder: Order = {
@@ -33,6 +36,7 @@ const OrderManagement = () => {
         contract: '',
         deposit: 0,
         totalCost: 0,
+        orderStatus: 'Processing', // ✅ Added default status
         shipments: []
     };
 
@@ -51,12 +55,19 @@ const OrderManagement = () => {
 
     const fetchOrders = async () => {
         try {
-            console.log('Fetching orders...');
+            console.log('📌 Fetching Orders from OrderService...');
             const data = await OrderService.getOrders();
-            console.log('Orders fetched:', data);
-            setOrders(data);
+            console.log('📦 Orders Retrieved:', data); // Log full order list
+    
+            if (data.length === 0) {
+                console.warn('⚠️ No orders returned from Firestore. Check Firestore.');
+            } else {
+                console.log('✅ Orders successfully retrieved. Updating state.');
+            }
+    
+            setOrders(data); // Ensure orders are actually set in state
         } catch (error) {
-            console.error('Error fetching orders:', error);
+            console.error('❌ Error fetching orders:', error);
         }
     };
 
@@ -71,7 +82,7 @@ const OrderManagement = () => {
     const isShipmentField = (name: keyof Order): name is ShipmentField => SHIPMENT_FIELDS.includes(name as ShipmentField);
 
     // Main Function to handle input changes
-    const onInputChange = (e: OrderInputEvent, name: keyof Order) => {
+    const onInputChange = (e: OrderInputEvent | { target: {value: string }}, name: keyof Order) => {
         if ('originalEvent' in e) {
             setOrder((prev) => ({
                 ...prev,
@@ -93,8 +104,16 @@ const OrderManagement = () => {
         } else if (isShipmentField(name)) {
             _order[name] = handleShipmentField(val ?? null) as Order[typeof name];
         } else {
-            _order[name] = val as Order[typeof name];
-        }
+            if (name === "orderStatus") {
+                if (typeof val === "string" && ["Processing", "Shipping", "Arrived", "Completed"].includes(val)) {
+                    _order[name] = val as Order["orderStatus"];
+                } else {
+                    console.warn(`⚠️ Invalid orderStatus value: ${val}`);
+                    _order[name] = "Processing";  // Default to "Processing" if invalid
+                }
+            } else {
+                _order[name] = val as Order[typeof name];
+            }        }
 
         if (!validateOrderField(name, _order[name])) {
             toast.current?.show({
@@ -279,9 +298,9 @@ const OrderManagement = () => {
     const actionBodyTemplate = (rowData: Order) => {
         return (
             <React.Fragment>
-                <Button icon="pi pi-pencil" className="p-button-rounded p-button-success mr-2" onClick={() => editOrder(rowData)} />
-                <Button icon="pi pi-eye" className="p-button-rounded p-button-info mr-2" onClick={() => router.push(`/orders/${rowData.id}`)} />
-                <Button icon="pi pi-trash" className="p-button-rounded p-button-warning" onClick={() => confirmDeleteOrder(rowData)} />
+                <Button icon="pi pi-pencil" className="p-button-sm p-button-success mr-2" onClick={() => editOrder(rowData)} />
+                <Button icon="pi pi-eye" className="p-button-sm p-button-info mr-2" onClick={() => router.push(`/orders/${rowData.id}`)} />
+                <Button icon="pi pi-trash" className="p-button-sm p-button-warning" onClick={() => confirmDeleteOrder(rowData)} />
             </React.Fragment>
         );
     };
@@ -314,7 +333,7 @@ const OrderManagement = () => {
                     <Toast ref={toast} />
                     <Toolbar className="mb-4" left={leftToolbarTemplate}></Toolbar>
 
-                    <DataTable
+                    <DataTable className="datatable-container"
                         ref={dt}
                         value={orders}
                         selection={selectedOrders}
@@ -331,17 +350,36 @@ const OrderManagement = () => {
                         globalFilter={globalFilter}
                         emptyMessage="No orders found."
                         header={header}
-                        responsiveLayout="scroll"
+                        scrollable 
+                        scrollHeight="flex"
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
 
                         {/* Render Order ID without logging */}
-                        <Column field="orderId" header="Order ID" sortable body={(rowData) => rowData.orderId}></Column>
+                        <Column field="orderId" header="Order ID" sortable style ={{ width: '10%' }} body={(rowData) => rowData.orderId}></Column>
+
+                        {/* Render Order Status */}
+                        <Column 
+                            field="orderStatus" 
+                            header="Status" 
+                            sortable
+                            style = {{ width: '12%'}} 
+                            body={(rowData: Order) => {
+                                const statusColors: Record<Order["orderStatus"], "warning" | "info" | "success" | "danger"> = {
+                                    Processing: "warning",
+                                    Shipping: "info",
+                                    Arrived: "success",
+                                    Completed: "danger"
+                                };
+
+                                return <Tag value={rowData.orderStatus} severity={statusColors[rowData.orderStatus]} />;
+                            }} 
+                        />
 
                         {/* Render Dates */}
-                        <Column field="orderDate" header="Order Date" sortable body={(rowData) => (rowData.orderDate ? new Date(rowData.orderDate).toLocaleDateString() : '')}></Column>
-                        <Column field="finalCountDate" header="Final Count Date" sortable body={(rowData) => (rowData.finalCountDate ? new Date(rowData.finalCountDate).toLocaleDateString() : '')}></Column>
-                        <Column field="finishManufactureDate" header="Finish Manufacture Date" sortable body={(rowData) => (rowData.finishManufactureDate ? new Date(rowData.finishManufactureDate).toLocaleDateString() : '')}></Column>
+                        <Column field="orderDate" header="Order Date" sortable style = {{ width: '12%'}}  body={(rowData) => (rowData.orderDate ? new Date(rowData.orderDate).toLocaleDateString() : '')}></Column>
+                        <Column field="finalCountDate" header="Final Count Date" sortable style = {{ width: '12%'}} body={(rowData) => (rowData.finalCountDate ? new Date(rowData.finalCountDate).toLocaleDateString() : '')}></Column>
+                        <Column field="finishManufactureDate" header="Finish Manufacture Date" sortable style = {{ width: '12%'}} body={(rowData) => (rowData.finishManufactureDate ? new Date(rowData.finishManufactureDate).toLocaleDateString() : '')}></Column>
                         <Column field="leavePortDate" header="Leave Port Date" sortable body={(rowData) => (rowData.leavePortDate ? new Date(rowData.leavePortDate).toLocaleDateString() : '')}></Column>
                         <Column field="arrivePortDate" header="Arrive Port Date" sortable body={(rowData) => (rowData.arrivePortDate ? new Date(rowData.arrivePortDate).toLocaleDateString() : '')}></Column>
                         <Column field="deliveredToAmazonDate" header="Delivered to Amazon" sortable body={(rowData) => (rowData.deliveredToAmazonDate ? new Date(rowData.deliveredToAmazonDate).toLocaleDateString() : '')}></Column>
@@ -351,7 +389,7 @@ const OrderManagement = () => {
                         {/* Render other fields */}
                         <Column field="contract" header="Contract" sortable body={(rowData) => rowData.contract}></Column>
                         <Column field="deposit" header="Deposit" sortable body={(rowData) => (rowData.deposit ? `$${rowData.deposit.toLocaleString('en-US', { style: 'currency', currency: 'USD' }).replace('$', '')}` : `$0.00`)}></Column>
-                        <Column field="totalCost" header="Total Cost" sortable body={(rowData) => (rowData.totalCost ? `$${rowData.totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD' }).replace('$', '')}` : `$0.00`)}></Column>
+                        <Column field="totalCost" header="Total Cost" sortable style = {{ width: '12%'}} body={(rowData) => (rowData.totalCost ? `$${rowData.totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD' }).replace('$', '')}` : `$0.00`)}></Column>
 
                         {/* Action Buttons */}
                         <Column body={actionBodyTemplate} headerStyle={{ width: '8rem' }}></Column>
@@ -362,6 +400,22 @@ const OrderManagement = () => {
                             <label htmlFor="orderId">Order ID</label>
                             <InputText id="orderId" value={order.orderId} onChange={(e) => onInputChange(e, 'orderId')} className={classNames({ 'p-invalid': submitted && !order.orderId })} disabled={!!order.id} />
                             {submitted && !order.orderId && <small className="p-invalid">Order ID is required.</small>}
+                        </div>
+
+                        <div className="field">
+                        <label htmlFor="orderStatus">Order Status</label>
+                        <Dropdown
+                            id="orderStatus"
+                            value={order.orderStatus}
+                            options={[
+                                { label: "Processing", value: "Processing" },
+                                { label: "Shipping", value: "Shipping" },
+                                { label: "Arrived", value: "Arrived" },
+                                { label: "Completed", value: "Completed" }
+                            ]}
+                            onChange={(e) => onInputChange({ target: { value: e.value } }, 'orderStatus')}   
+                            placeholder="Select Status"
+                        />
                         </div>
 
                         <div className="field">

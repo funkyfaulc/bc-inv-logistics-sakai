@@ -1,8 +1,7 @@
-@media screen and (min-width: 1960px) {
+@media screen and (min-width: 1600px) {  // Reduce width constraint
     .layout-main, .landing-wrapper {
-        width: 1504px;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        width: 95%;  // Use a percentage instead of fixed px value
+        max-width: 96vw; /* Ensures full screen usage */
     }
 }
 
@@ -10,8 +9,9 @@
     .layout-wrapper {
         &.layout-overlay {
             .layout-main-container {
-                margin-left: 0;
-                padding-left: 2rem;
+                padding-left: 1rem; /* Reduce left padding */
+                padding-right: 1rem;
+                width: 100%;
             }
 
             .layout-sidebar {
@@ -23,6 +23,11 @@
                 border-bottom-left-radius: 0;
             }
 
+            .p-datatable {
+                table-layout: auto !important; /* 🛠 Allow columns to resize dynamically */
+            }
+
+
             &.layout-overlay-active {
                 .layout-sidebar {
                     transform: translateX(0);
@@ -32,7 +37,10 @@
 
         &.layout-static {
             .layout-main-container {
-                margin-left: 225px;
+                margin-left: 190px;  // Reduce sidebar impact on table width
+                padding-right: 1rem;
+                transition: all 0.3s ease-in-out;
+                overflow-x: hidden; // Prevent horizontal scrolling
             }
 
             &.layout-static-inactive {
@@ -43,7 +51,9 @@
 
                 .layout-main-container {
                     margin-left: 0;
+                    width: 100%;
                     padding-left: 2rem;
+                    overflow-x: hidden; // Prevent horizontal scrolling
                 }
             }
         }
@@ -62,7 +72,8 @@
     .layout-wrapper {
         .layout-main-container {
             margin-left: 0;
-            padding-left: 2rem;
+            padding-left: 1rem; // Reduce padding to allow more space for content
+            width: 100%; // Ensure table takes up full width
         }
 
         .layout-sidebar {

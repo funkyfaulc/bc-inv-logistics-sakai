@@ -34,11 +34,17 @@ const Dashboard = () => {
     /** 🔍 Fetch active orders (not yet available in Amazon) */
     const fetchOrders = async () => {
         try {
+            console.log('📌 Fetching Orders from OrderService...');
             const data = await OrderService.getOrders();
-            const activeOrders = data.filter(order => !order.availableInAmazonDate);
+            console.log('📦 Orders Retrieved:', data);
+    
+            // 🔥 Filter orders to only show Processing, Shipping, or Arrived
+            const activeOrders = data.filter(order => order.orderStatus !== "Completed");
+    
+            console.log('✅ Active Orders:', activeOrders);
             setOrders(activeOrders);
         } catch (error) {
-            console.error('Error fetching orders:', error);
+            console.error('❌ Error fetching orders:', error);
         }
     };
 
@@ -52,25 +58,39 @@ const Dashboard = () => {
         }
     };
 
-   /** 📌 Get the next due milestone for each order */
+    /** 📌 Get the next due milestone for each order */
     const getNextMilestone = (order: Order) => {
+        console.log("🔄 Checking Milestone for Order:", order.orderId, order);
+
         const milestones = [
             { name: 'Final Count', date: order.finalCountDate },
             { name: 'Manufacturing Complete', date: order.finishManufactureDate },
             { name: 'Leaves Port', date: order.leavePortDate },
             { name: 'Arrives at Destination', date: order.arrivePortDate },
             { name: 'Delivered to Amazon', date: order.deliveredToAmazonDate }
-        ].filter(m => m.date); // Filter out null values
+        ].filter(m => m.date); // Remove null dates
 
-        if (milestones.length === 0) return { name: 'No upcoming milestones', daysRemaining: '-' };
+        console.log("📌 Milestones Found:", milestones);
 
-        const nextMilestone = milestones
-            .filter(m => m.date && new Date(m.date).getTime() > Date.now()) // Only future dates
-            .sort((a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime())[0];
+        // 🛑 If there are no milestone dates at all
+        if (milestones.length === 0) {
+            console.log("⚠️ No upcoming milestones for order:", order.orderId);
+            return { name: "No upcoming milestones", daysRemaining: "-" };
+        }
 
-        const daysRemaining = nextMilestone?.date
-            ? Math.ceil((new Date(nextMilestone.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-            : '-';
+        // 🛑 If all milestone dates are in the past
+        const futureMilestones = milestones.filter(m => new Date(m.date!).getTime() > Date.now());
+        if (futureMilestones.length === 0) {
+            console.log("⚠️ All milestones have passed for order:", order.orderId);
+            return { name: "No upcoming milestones", daysRemaining: "-" };
+        }
+
+        // ✅ Get the nearest upcoming milestone
+        const nextMilestone = futureMilestones.sort((a, b) => new Date(a.date!).getTime() - new Date(b.date!).getTime())[0];
+
+        console.log("✅ Next Milestone:", nextMilestone);
+
+        const daysRemaining = Math.ceil((new Date(nextMilestone.date!).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
         return { ...nextMilestone, daysRemaining };
     };
@@ -86,20 +106,19 @@ const Dashboard = () => {
                     {orders.length > 0 ? (
                         <DataTable value={orders} responsiveLayout="scroll">
                             <Column field="orderId" header="Order ID" />
-                            <Column field="orderDate" header="Order Date" body={(rowData) => new Date(rowData.orderDate).toLocaleDateString()} />
-                            <Column header="Next Milestone" body={(rowData) => getNextMilestone(rowData).name} />
-                            <Column header="Days Left" body={(rowData) => getNextMilestone(rowData).daysRemaining} />
-                            <Column
-                                header="Mark Complete"
-                                body={(rowData) => (
-                                    <Button
-                                        icon="pi pi-check"
-                                        className="p-button-sm p-button-success"
-                                        onClick={() => {
-                                            toast.current?.show({ severity: 'success', summary: 'Milestone Marked', detail: `Order ${rowData.orderId} milestone completed`, life: 3000 });
-                                        }}
-                                    />
-                                )}
+                            <Column field="orderDate" header="Order Date" body={(rowData) => rowData.orderDate ? new Date(rowData.orderDate).toLocaleDateString() : '-'} />
+                            <Column field="orderStatus" header="Status" body={(rowData) => (
+                                <span className={`order-status ${rowData.orderStatus.toLowerCase()}`}>
+                                    {rowData.orderStatus}
+                                </span>
+                            )} />
+                            <Column 
+                                field="nextMilestone" 
+                                header="Next Milestone"
+                                body={(rowData) => {
+                                    const milestone = getNextMilestone(rowData);
+                                    return `${milestone.name} (${milestone.daysRemaining} days)`;
+                                }} 
                             />
                         </DataTable>
                     ) : (
@@ -120,20 +139,29 @@ const Dashboard = () => {
                                 return groups;
                             }, {} as Record<string, InventoryRecord[]>)
                         ).map(([type, items]) => (
-                            <Panel key={type} header={type} toggleable className="mb-3">
+                            <Panel key={type} header={type} toggleable collapsed className="mb-3">
                                 <DataTable value={items} responsiveLayout="scroll">
-                                    <Column field="sku" header="SKU" body={(rowData) => (
-                                        <span title={rowData.sku}>{rowData.sku}</span>
-                                    )} style={{ width: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} />
-                                    <Column field="totalUnits" header="Total Units" />
+                                    <Column 
+                                        field="sku" 
+                                        header="SKU" 
+                                        style={{ width: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} 
+                                    />
+
+                                    <Column 
+                                        field="totalUnits" 
+                                        header="Total Units" 
+                                        style={{ width: '80px', textAlign: 'center' }} 
+                                    />
+
                                     <Column 
                                         header="Stock Health" 
                                         body={(rowData: InventoryRecord) => (
                                             <ProgressBar 
-                                                value={Math.min(((rowData.totalUnits ?? 0 ) / 500) * 100, 100)} 
+                                                value={Math.min(((rowData.totalUnits ?? 0) / 500) * 100, 100)} 
                                                 showValue={false} 
                                             />
                                         )} 
+                                        style={{ width: '100px' }} 
                                     />
                                 </DataTable>
                             </Panel>
