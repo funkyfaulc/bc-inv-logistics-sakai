@@ -1,6 +1,6 @@
 // demo/services/OrderService.tsx
 
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp, getDoc, Firestore } from 'firebase/firestore';
 import { db } from '../../app/firebase'; // Adjust this path if necessary
 
 // Import your custom interfaces from the centralized types
@@ -14,6 +14,15 @@ const orderCollection = collection(db, 'orders');
 
 // Updated `mapFirestoreOrderToOrder`
 const mapFirestoreOrderToOrder = (firestoreOrder: OrderFirestore, id: string): Order => {
+    
+    const determineStatus = (order: OrderFirestore): "Processing" | "Shipping" | "Arrived" | "Completed" => {
+        if (order.orderStatus) return order.orderStatus; // ✅ Return the order status if it's already set
+        if (order.availableInAmazonDate) return "Completed";
+        if (order.deliveredToAmazonDate) return "Arrived";
+        if (order.leavePortDate) return "Shipping";
+        return "Processing";
+    };
+    
     return {
         id,
         orderId: firestoreOrder.orderId,
@@ -28,6 +37,7 @@ const mapFirestoreOrderToOrder = (firestoreOrder: OrderFirestore, id: string): O
         contract: firestoreOrder.contract || '',
         deposit: typeof firestoreOrder.deposit === 'number' ? firestoreOrder.deposit : parseFloat(firestoreOrder.deposit) || 0,
         totalCost: typeof firestoreOrder.totalCost === 'number' ? firestoreOrder.totalCost : parseFloat(firestoreOrder.totalCost) || 0,
+        orderStatus: determineStatus(firestoreOrder), // ✅ Auto-assign order status
         shipments: Array.isArray(firestoreOrder.shipments)
             ? firestoreOrder.shipments.map((shipment) => ({
                   shipmentId: shipment.shipmentId,
@@ -67,6 +77,7 @@ const mapOrderToFirestore = (order: Order): OrderFirestore => {
         contract: order.contract || '',
         deposit: order.deposit ?? 0,
         totalCost: order.totalCost ?? 0,
+        orderStatus: order.orderStatus ?? 'Processing', // Default to 'Processing'
         created_at: serverTimestamp() as Timestamp,
         updated_at: serverTimestamp() as Timestamp,
         shipments: order.shipments

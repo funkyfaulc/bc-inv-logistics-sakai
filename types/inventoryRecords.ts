@@ -4,6 +4,7 @@ export interface InventoryRecord {
     id?: string; // Firestore document ID
     asin: string; // ASIN for linking to a product
     sku?: string; // Optional SKU for internal identification
+    productType?: string; // Product type 
     fba: number; // Available units at FBA
     inbound_to_fba: number; // Total inbound units to FBA
     reserved_units: number; // Total reserved units at FBA
