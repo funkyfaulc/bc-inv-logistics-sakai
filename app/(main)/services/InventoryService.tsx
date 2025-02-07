@@ -1,8 +1,8 @@
 // bc-inv-logistics-sakai/app/services/InventoryService.tsx
 
 import { collection, getDocs, addDoc, Timestamp } from 'firebase/firestore';
-import { db } from '../../app/firebase'; // Adjust path as necessary
-import { InventoryUpdate } from '../../types/inventory';
+import { db } from '@/app/firebase'; // Adjust path as necessary
+import { InventoryUpdate } from '@/types/inventory';
 
 // Firestore collection reference for inventory updates
 const inventoryCollection = collection(db, 'inventory_updates');

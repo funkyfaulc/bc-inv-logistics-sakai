@@ -21,8 +21,8 @@ import OrderEditModal from '@/app/(main)/orders/modal/OrderEditModal';
 import { Order, Shipment, ShipmentItem, EventItem } from '@/types/orders';
 import { Product } from '@/types/products';
 
-import { OrderService } from '@/demo/services/OrderService';
-import { ProductService } from '@/demo/services/ProductService'; // Ensure correct import
+import { OrderService } from '@services/OrderService';
+import { ProductService } from '@services/ProductService'; // Ensure correct import
 
 const OrderDetails = () => {
     const { id } = useParams() as { id: string }; //Expect id to be string

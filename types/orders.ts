@@ -103,14 +103,16 @@ export interface OrderFirestore {
     shipments: ShipmentFirestore[];
 }
 
-export interface OrderItem {
+export interface OrderItem extends Product {
     sku: string; // Reference to SKU
     totalUnitCount: number; // Total units for this SKU in the order
     totalCartonCount: number; // Total cartons for this SKU in the order
 }
 
 export interface OrderItemFirestore {
+    asin: string; // ✅ Ensure ASIN is included
     sku: string;
     totalUnitCount: number;
     totalCartonCount: number;
+    updatedAt?: any;
 }

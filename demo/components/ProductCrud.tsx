@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dropdown } from 'primereact/dropdown';
 import { Button } from 'primereact/button';
-import ProductService from '../services/ProductService';
+import ProductService from '@services/ProductService';
 import { Product } from '@/types/products';
 
 const ProductCrud = () => {

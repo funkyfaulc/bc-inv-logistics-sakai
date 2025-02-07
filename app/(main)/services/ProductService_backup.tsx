@@ -1,7 +1,7 @@
 //bc-inventory-logistics-app/bc-inv-logistics-sakai/demo/services/ProductService.tsx
 
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../app/firebase'; // Two directories up from demo/service
+import { db } from '@/app/firebase'; // Two directories up from demo/service
 import { Product } from 'types/products'; // Import Product interface
 
 // Firestore collection reference

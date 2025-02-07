@@ -12,7 +12,7 @@ import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState, Suspense, lazy } from 'react';
-import ProductService from '../../../demo/services/ProductService';
+import ProductService from '@services/ProductService';
 import Papa from 'papaparse';
 import { Product as ProductType } from '@/types/products';
 import { Order } from '@/types/orders';

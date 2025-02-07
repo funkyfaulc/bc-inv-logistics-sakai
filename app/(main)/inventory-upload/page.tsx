@@ -6,8 +6,8 @@ import { InputText } from 'primereact/inputtext';
 import { Dialog } from 'primereact/dialog';
 import { Toast } from 'primereact/toast';
 import Papa from 'papaparse';
-import { InventoryRecordsService } from '../../../demo/services/InventoryRecordsService';
-import ProductService from '../../../demo/services/ProductService';
+import { InventoryRecordsService } from '@services/InventoryRecordsService';
+import ProductService from '@services/ProductService';
 import { InventoryRecord } from '../../../types/inventoryRecords';
 import { Product } from '../../../types/products';
 

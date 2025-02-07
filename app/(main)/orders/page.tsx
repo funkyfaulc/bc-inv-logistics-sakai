@@ -13,7 +13,7 @@ import { Toolbar } from 'primereact/toolbar';
 import { classNames } from 'primereact/utils';
 import React, { useEffect, useRef, useState, Suspense } from 'react';
 import { Calendar } from 'primereact/calendar';
-import { OrderService } from '../../../demo/services/OrderService';
+import { OrderService } from '@services/OrderService';
 import { useRouter } from 'next/navigation';
 import { Order } from '../../../types/orders';
 import { CalendarChangeEvent, InputChangeEvent, OrderInputEvent, OrderDateKey } from '@/types/events';

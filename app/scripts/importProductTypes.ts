@@ -4,7 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Load the service account key
-import serviceAccount from './keys/bc-inv-logistics-04377b7d2630.json'; // Adjust if necessary
+import serviceAccount from '../../keys/bc-inv-logistics-04377b7d2630.json'; // Adjust if necessary
 
 // Initialize the Firebase Admin SDK
 admin.initializeApp({

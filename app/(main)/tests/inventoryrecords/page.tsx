@@ -3,7 +3,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { InventoryRecordsService } from '../../../../demo/services/InventoryRecordsService';
+import { InventoryRecordsService } from '@services/InventoryRecordsService';
 
 
 const TestInventoryRecords = () => {

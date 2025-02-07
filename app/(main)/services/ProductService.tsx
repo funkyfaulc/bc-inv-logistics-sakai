@@ -1,4 +1,4 @@
-import { db } from '../../app/firebase'; // Adjust path as needed
+import { db } from '@/app/firebase'; // Adjust path as needed
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, serverTimestamp } from 'firebase/firestore';
 import { Product } from 'types/products'; // Import Product interface
 

@@ -8,8 +8,8 @@ import { InputText } from 'primereact/inputtext';
 import { Calendar } from 'primereact/calendar';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
-import { ProductService } from '../../../demo/services/ProductService';
-import { OrderService } from '../../../demo/services/OrderService';
+import { ProductService } from '@services/ProductService';
+import { OrderService } from '@services/OrderService';
 import { Product } from '@/types/products';
 import { Order } from '@/types/orders';
 

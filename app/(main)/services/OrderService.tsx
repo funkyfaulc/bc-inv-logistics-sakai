@@ -1,7 +1,7 @@
-// demo/services/OrderService.tsx
+// bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/services/OrderService.tsx
 
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, Timestamp, getDoc, Firestore } from 'firebase/firestore';
-import { db } from '../../app/firebase'; // Adjust this path if necessary
+import { db } from "@/app/firebase"; // Adjusted Path
 
 // Import your custom interfaces from the centralized types
 import { Order, Shipment, ShipmentItem, OrderFirestore, ShipmentFirestore, ShipmentItemFirestore } from 'types/orders';

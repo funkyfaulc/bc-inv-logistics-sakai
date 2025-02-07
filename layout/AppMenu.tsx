@@ -40,6 +40,12 @@ const AppMenu = () => {
                     label: 'EOM Inventory',
                     icon: 'pi pi-fw pi-chart-line',
                     to: '/reporting/'
+                },
+
+                {
+                    label: 'Order Production',
+                    icon: 'pi pi-fw pi-cog',
+                    to: '/inventory-production/'
                 }
             ]
         }

@@ -1,11 +1,11 @@
 //bc-inventory-logistics-app/bc-inv-logistics-sakai/demo/services/InventoryRecordsService.tsx
 
 import { collection, getDocs, getDoc, addDoc, updateDoc, query, where, doc, Timestamp } from 'firebase/firestore';
-import { db } from '../../app/firebase';
-import { InventoryRecord } from '../../types/inventoryRecords';
+import { db } from '@/app/firebase';
+import { InventoryRecord } from '@/types/inventoryRecords';
 import { runTransaction } from 'firebase/firestore';
 import { writeBatch } from "firebase/firestore";
-import { Product } from '../../types/products';
+import { Product } from '@/types/products';
 
 const inventoryCollection = collection(db, 'inventory_records');
 
