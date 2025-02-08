@@ -10,6 +10,7 @@ import { Toast } from "primereact/toast";
 import { getActiveOrders, getOrderProducts, saveInventoryProduction } from "@services/InventoryProductionService";
 import { Order, OrderItem } from "@/types/orders"; 
 import { MultiSelect } from "primereact/multiselect";
+import ProductService from "@services/ProductService"; // ✅ Ensure correct path
 
 const InventoryProduction = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -25,16 +26,15 @@ const InventoryProduction = () => {
     const fetchProducts = async (orderId: string) => {
         try {
             const products = await getOrderProducts(orderId);
-            const updatedProducts = await Promise.all(
-                products.map(async (product) => {
-                    // 🔥 Fetch unitsPerCarton from product dictionary
-                    const productDetails = await getProductDetails(product.asin); 
-                    return {
-                        ...product,
-                        unitsPerCarton: productDetails?.unitsPerCarton ?? 1, // Default to 1 if missing
-                    };
-                })
-            );
+            const allProducts = await ProductService.getProducts(); // ✅ Fetch all products
+    
+            const updatedProducts = products.map((product) => {
+                const productDetails = allProducts.find(p => p.asin === product.asin);
+                return {
+                    ...product,
+                    unitsPerCarton: productDetails?.unitsPerCarton ?? 1, // ✅ Assign correct value
+                };
+            });
     
             setOrderProducts(updatedProducts);
         } catch (error) {
@@ -79,39 +79,42 @@ const InventoryProduction = () => {
     };
 
     // ✅ Handle saving production data
-    const handleSave = async () => {
+   const handleSave = async () => {
         if (!selectedOrder) {
             toast.current?.show({ severity: "warn", summary: "No Order Selected", detail: "Please select an order first." });
             return;
         }
-    
-        const getProductionData = async (orderId: string) => {
-            const productionData = await fetchInventoryProduction(orderId);
-            return Promise.all(productionData.map(async (entry) => {
-                const productDetails = await getProductDetails(entry.asin);
-                return {
-                    ...entry,
-                    unitsPerCarton: productDetails?.unitsPerCarton ?? 1, // ✅ Lookup only when needed
-                };
-            }));
-        };
-    
+
+        const productionData = orderProducts.map((product) => ({
+            asin: product.asin,
+            sku: product.sku,
+            totalUnitCount: calculateTotalUnits(product),
+            totalCartonCount: cartonCounts[product.asin] ?? 0,
+            unitsPerCarton: product.unitsPerCarton ?? 1, // ✅ Include when saving
+            orderId: selectedOrder.orderId,
+        }));
+
         console.log("🔥 Saving Production Data:", productionData);
-    
+
         try {
-            await saveInventoryProduction(productionData);
+            await saveInventoryProduction(
+                productionData.map((item) => ({
+                    ...item,
+                    orderId: selectedOrder.orderId, // ✅ Ensure orderId is passed
+                }))
+            );            
             toast.current?.show({ severity: "success", summary: "Saved", detail: "Production data saved successfully." });
-    
-            // 🔥 ✅ Delay re-fetching to ensure Firestore has updated
+
+            // ✅ Delay re-fetching to ensure Firestore has updated
             setTimeout(() => {
                 if (selectedOrder) {
                     fetchProducts(selectedOrder.orderId);
                 }
-            }, 700); // 🔥 Slight delay to allow Firestore to sync
-        } catch (error) {
-            console.error("🔥 Error saving production data:", error);
-            toast.current?.show({ severity: "error", summary: "Error", detail: "Failed to save production data." });
-        }
+                }, 700);
+            } catch (error) {
+                console.error("🔥 Error saving production data:", error);
+                toast.current?.show({ severity: "error", summary: "Error", detail: "Failed to save production data." });
+            }
     };
 
     return (
@@ -180,8 +183,7 @@ const InventoryProduction = () => {
                             )}
                         />
                         <Column header="Total Units"
-                            body={(rowData) => calculateTotalUnits(rowData.asin, rowData.unitsPerCarton)}
-                        />
+                            body={(rowData) => calculateTotalUnits(rowData)}                        />
                     </DataTable>
 
                     {loading && <p className="text-center">Loading products...</p>}

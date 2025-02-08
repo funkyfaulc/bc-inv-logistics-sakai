@@ -27,15 +27,16 @@ const OrderEditModal = lazy(() => import('@/app/(main)/orders/modal/OrderEditMod
 
 
 const Crud = () => {
-    const emptyProduct = {
-        id: '',
-        product: '',
-        material: '',
-        color: '',
-        size: '',
-        asin: '',
-        sku: '',
-        upc: ''
+    const emptyProduct: Product = {
+        id: "",
+        product: "",
+        material: "",
+        color: "",
+        size: "",
+        asin: "",
+        sku: "",
+        upc: "",
+        unitsPerCarton: 1, // ✅ Added default value
     };
 
     const [products, setProducts] = useState<Product[]>([]);
@@ -126,7 +127,8 @@ const Crud = () => {
     const createNewProduct = () => {
         const newProduct: Product = {
             id: '', // Temporary ID; will be replaced after saving to Firestore
-            product: ''
+            product: '',
+            unitsPerCarton: 1,
             // other fields...
         };
 

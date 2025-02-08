@@ -20,7 +20,14 @@ export const ProductService = {
     // Fetch all products from Firestore
     async getProducts(): Promise<Product[]> {
         const snapshot = await getDocs(productCollection);
-        return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() } as Product));
+        return snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data,
+                unitsPerCarton: data.unitsPerCarton ?? 1, // Default to 1 if missing
+            } as Product;
+        });
     },
 
     // Fetch a product by its name

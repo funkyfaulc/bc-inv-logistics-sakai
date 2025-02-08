@@ -8,6 +8,42 @@ const inventoryProductionRef = collection(db, "inventory_production");
 const productsCollectionRef = collection(db, "products_sk");
 const ordersCollectionRef = collection(db, "orders");
 
+// ✅ Function: Fetch Inventory Production Data
+export const fetchInventoryProduction = async (orderId: string): Promise<OrderItemFirestore[]> => {
+    try {
+        if (!orderId) {
+            console.error("❌ fetchInventoryProduction called with missing orderId");
+            return [];
+        }
+
+        // ✅ Fetch all products in `inventory_production` that match this orderId
+        const q = query(collection(db, "inventory_production"), where("orderId", "==", orderId));
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            console.warn(`⚠️ No production data found for order: ${orderId}`);
+            return [];
+        }
+
+        return snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                asin: data.asin || "MISSING_ASIN",
+                sku: data.sku || "MISSING_SKU",
+                totalUnitCount: data.totalUnitCount ?? 0,
+                totalCartonCount: data.totalCartonCount ?? 0,
+                unitsPerCarton: data.unitsPerCarton ?? 1,
+                orderId: data.orderId || orderId, // ✅ Ensure orderId is always included
+                updatedAt: data.updatedAt || Timestamp.now(),
+            } as OrderItemFirestore;
+        });
+    } catch (error) {
+        console.error("🔥 Error fetching production data:", error);
+        return [];
+    }
+};
+
 // ✅ Function: Get Active Orders
 export const getActiveOrders = async (): Promise<Order[]> => {
     const q = query(ordersCollectionRef, where("orderStatus", "!=", "Completed"));
@@ -76,16 +112,17 @@ export const saveInventoryProduction = async (productionData: OrderItemFirestore
     const batch = writeBatch(db);
 
     productionData.forEach((item) => {
-        if (!item.asin) {
-            console.error("❌ Missing ASIN for item:", item);
+        if (!item.asin || !item.orderId) {
+            console.error("❌ Missing ASIN or OrderId for item:", item);
             return; 
         }
 
-        const docRef = doc(inventoryProductionRef, item.asin); // ✅ Store by ASIN instead of SKU
+        const docRef = doc(db, "inventory_production", item.asin); // ✅ Store by ASIN instead of OrderID
 
         batch.set(docRef, {
             ...item,
-            sku: item.sku, // ✅ Keep SKU for reference
+            orderId: item.orderId, // ✅ Ensure orderId is stored inside the document
+            sku: item.sku, 
             updatedAt: Timestamp.now(),
         }, { merge: true });
     });
