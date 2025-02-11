@@ -42,7 +42,7 @@ const TestInventoryRecords = () => {
                     const firstRecordId = records[0].id;
                     if (firstRecordId) {
                         console.log('Updating the first record...');
-                        await InventoryRecordsService.updateInventoryRecord(firstRecordId, { fba: 30 }, 'Updated FBA count');
+                        await InventoryRecordsService.updateInventoryRecord(firstRecordId, { fba: 30 });
                         console.log('Record updated successfully!');
                     } else {
                         console.warn('The first record has no ID.');

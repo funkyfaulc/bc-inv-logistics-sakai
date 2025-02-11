@@ -8,7 +8,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
 import { getActiveOrders, getOrderProducts, saveInventoryProduction } from "@services/InventoryProductionService";
-import { Order, OrderItem } from "@/types/orders"; 
+import { Order, OrderItem } from "@/types/orders";
 import { MultiSelect } from "primereact/multiselect";
 import ProductService from "@services/ProductService"; // ✅ Ensure correct path
 
@@ -27,7 +27,7 @@ const InventoryProduction = () => {
         try {
             const products = await getOrderProducts(orderId);
             const allProducts = await ProductService.getProducts(); // ✅ Fetch all products
-    
+
             const updatedProducts = products.map((product) => {
                 const productDetails = allProducts.find(p => p.asin === product.asin);
                 return {
@@ -35,7 +35,7 @@ const InventoryProduction = () => {
                     unitsPerCarton: productDetails?.unitsPerCarton ?? 1, // ✅ Assign correct value
                 };
             });
-    
+
             setOrderProducts(updatedProducts);
         } catch (error) {
             console.error("🔥 Error fetching products:", error);
@@ -102,7 +102,7 @@ const InventoryProduction = () => {
                     ...item,
                     orderId: selectedOrder.orderId, // ✅ Ensure orderId is passed
                 }))
-            );            
+            );
             toast.current?.show({ severity: "success", summary: "Saved", detail: "Production data saved successfully." });
 
             // ✅ Delay re-fetching to ensure Firestore has updated
@@ -146,7 +146,7 @@ const InventoryProduction = () => {
                 placeholder="Search SKU..."
                 className="p-inputtext p-component w-full md:w-20rem mb-3"
             />
-            
+
             {/* Data Table Section */}
             {selectedOrder && (
                 <>
@@ -160,7 +160,7 @@ const InventoryProduction = () => {
                         paginator
                         rows={10}
                         filterDisplay="menu"
-                    >                        
+                    >
                         <Column field="sku" header="SKU" />
 
                         {/* Carton and Spare Units */}

@@ -1,3 +1,5 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/reporting
+
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';

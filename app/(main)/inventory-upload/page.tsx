@@ -1,3 +1,5 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/inventory-upload/page.tsx
+
 'use client';
 
 import React, { useRef, useState } from 'react';
