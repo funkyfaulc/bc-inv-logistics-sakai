@@ -16,31 +16,23 @@ const Reporting = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Get all inventory records
                 const inventoryRecords = await InventoryRecordsService.getInventoryRecords();
-                const salesVelocityMap = await InventoryRecordsService.getSalesVelocity();
 
-                // Merge FBA and AWD data per ASIN
-                const mergedRecords = inventoryRecords.map(record => ({
-                    asin: record.asin,
-                    sku: record.sku,
-                    salesVelocity: salesVelocityMap.get(record.asin) ?? 0, // ✅ Add sales velocity from Sellerboard
-                    fba: record.fba ?? 0,
-                    inbound_to_fba: record.inbound_to_fba ?? 0,
-                    awd: record.awd ?? 0,
-                    inbound_to_awd: record.inbound_to_awd ?? 0,
-                    reserved_units: record.reserved_units ?? 0,
-                    reserved_fc_transfer: record.reserved_fc_transfer ?? 0,
-                    reserved_fc_processing: record.reserved_fc_processing ?? 0,
-                    reserved_customer_order: record.reserved_customer_order ?? 0,
-                    totalUnits: (record.fba ?? 0) + (record.inbound_to_fba ?? 0) + (record.awd ?? 0) + (record.inbound_to_awd ?? 0) + (record.reserved_units ?? 0),
-                    reserved: (record.reserved_units ?? 0) + (record.reserved_fc_transfer ?? 0) + (record.reserved_fc_processing ?? 0),
-                    snapshotDate: record.snapshotDate ?? new Date(),
-                    createdAt: record.createdAt ?? new Date(),
-                    updatedAt: record.updatedAt ?? new Date(),
-                }));
+                // ✅ Sort by Product Type, then Size, then Color
+                inventoryRecords.sort((a, b) => {
+                    const productA = a.productType ?? "Unknown Product";
+                    const productB = b.productType ?? "Unknown Product";
+                    const sizeA = a.size ?? "Unknown Size";
+                    const sizeB = b.size ?? "Unknown Size";
+                    const colorA = a.color ?? "Unknown Color";
+                    const colorB = b.color ?? "Unknown Color";
 
-                setInventoryRecords(mergedRecords);
+                    if (productA !== productB) return productA.localeCompare(productB);
+                    if (sizeA !== sizeB) return sizeA.localeCompare(sizeB);
+                    return colorA.localeCompare(colorB);
+                });
+
+                setInventoryRecords(inventoryRecords);
                 setLoading(false);
             } catch (error) {
                 console.error("Error fetching inventory data:", error);
@@ -59,10 +51,13 @@ const Reporting = () => {
         }
 
         // Convert data to CSV format
-        const headers = ['ASIN', 'SKU', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
+        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
         const csvData = inventoryRecords.map(record => [
             record.asin,
             record.sku,
+            record.productType,
+            record.size,
+            record.color,
             record.salesVelocity,
             record.fba,
             record.reserved_units,
@@ -99,15 +94,17 @@ const Reporting = () => {
                     <Toolbar className="mb-4" left={leftToolbarTemplate}></Toolbar>
 
                     <DataTable value={inventoryRecords} paginator rows={20} loading={loading} responsiveLayout="scroll" className="mt-4" rowHover reorderableColumns>
-                        <Column field="asin" header="ASIN" sortable style={{ fontSize: '0.85em' }}></Column>
-                        <Column field="sku" header="SKU" sortable style={{ fontSize: '0.85em' }}></Column>
-                        <Column field="salesVelocity" header="Sales Velocity" sortable style={{ fontSize: '0.85em' }}></Column>
-                        <Column field="fba" header="FBA Stock" sortable style={{ fontSize: '0.85em' }}></Column>
-                        <Column field="reserved_units" header="FBA Reserved" sortable style={{ fontSize: '0.85em' }}></Column>
-                        <Column field="awd" header="AWD Stock" sortable style={{ fontSize: '0.85em' }}></Column>
+                        <Column field="asin" header="ASIN" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="sku" header="SKU" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="productType" header="Product Type" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="size" header="Size" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="color" header="Color" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="salesVelocity" header="Sales Velocity" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="fba" header="FBA Stock" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="reserved_units" header="FBA Reserved" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="awd" header="AWD Stock" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="inbound_to_awd" header="Inbound to AWD" sortable style={{ fontSize: '0.85em' }} />
-                        <Column field="totalUnits" header="Total Units" sortable style={{ fontSize: '0.85em' }}></Column>
-
+                        <Column field="totalUnits" header="Total Units" sortable style={{ fontSize: '0.85em' }} />
                     </DataTable>
                 </div>
             </div>

@@ -4,71 +4,78 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/app/firebase';
 import { InventoryRecord } from '@/types/inventoryRecords';
+import { Product } from '@/types/products';
 
 const inventoryCollection = collection(db, 'inventory_records');
 const fbaInventoryCollection = collection(db, 'fba_inventory');
 const awdInventoryCollection = collection(db, 'awd_inventory');
 const salesVelocityCollection = collection(db, 'sales_velocity');
+const productsCollection = collection(db, 'products_sk');
+
 
 
 export const InventoryRecordsService = {
-    /** ✅ Fetch all inventory records */
+    /** ✅ Fetch all inventory records with product details */
     async getInventoryRecords(): Promise<InventoryRecord[]> {
         try {
+            console.log("🔄 Fetching inventory records...");
+
             const inventorySnapshot = await getDocs(inventoryCollection);
             const fbaSnapshot = await getDocs(fbaInventoryCollection);
             const awdSnapshot = await getDocs(awdInventoryCollection);
+            const productSnapshot = await getDocs(productsCollection); // ✅ Fetch products
+
             const salesVelocityMap = await this.getSalesVelocity();
 
-            // Convert FBA, AWD, and Inventory collections into maps for easy merging
+            // Convert FBA, AWD, and Product collections into maps for easy merging
             const fbaMap = new Map<string, any>();
-            fbaSnapshot.docs.forEach(doc => {
-                fbaMap.set(doc.id, doc.data());
-            });
+            fbaSnapshot.docs.forEach(doc => fbaMap.set(doc.id, doc.data()));
 
             const awdMap = new Map<string, any>();
-            awdSnapshot.docs.forEach(doc => {
-                awdMap.set(doc.id, doc.data());
+            awdSnapshot.docs.forEach(doc => awdMap.set(doc.id, doc.data()));
+
+            const productMap = new Map<string, any>();
+            productSnapshot.docs.forEach(doc => {
+                const data = doc.data();
+                productMap.set(data.asin, data);
             });
+
+            console.log("✅ Product Map Loaded:", productMap); // 🔍 Debugging the product map
 
             // Merge data across collections
             const mergedRecords: InventoryRecord[] = inventorySnapshot.docs.map(doc => {
                 const record = doc.data() as InventoryRecord;
                 const fbaData = fbaMap.get(record.asin) || {};
                 const awdData = awdMap.get(record.asin) || {};
+                const productData = productMap.get(record.asin) || {}; // Get product details
 
                 console.log(
-                    `Debug ASIN: ${record.asin},
-                    Reserved Units: ${fbaData.reserved_units},
-                    FBA: ${fbaData.fba},
-                    Inbound to FBA: ${fbaData.inbound_to_fba},
-                    AWD: ${awdData.awd},
-                    Inbound to AWD: ${awdData.inbound_to_awd}`
-                );
+                    `🔍 ASIN: ${record.asin} - Product Data:`,
+                    productData.product, productData.size, productData.color
+                ); // 🔍 Debugging each product
 
                 return {
                     asin: record.asin,
                     sku: record.sku ?? "Unknown SKU",
+                    productType: productData.product ?? "Unknown Product", // ✅ Merge Product Type
+                    size: productData.size ?? "Unknown Size", // ✅ Merge Size
+                    color: productData.color ?? "Unknown Color", // ✅ Merge Color
                     fba: fbaData.fba ?? 0,
                     inbound_to_fba: fbaData.inbound_to_fba ?? 0,
                     reserved_units: fbaData.reserved_units ?? 0,
-                    reserved_fc_transfer: fbaData.reserved_fc_transfer ?? 0,
-                    reserved_fc_processing: fbaData.reserved_fc_processing ?? 0,
-                    reserved_customer_order: fbaData.reserved_customer_order ?? 0,
                     awd: awdData.awd ?? 0,
                     inbound_to_awd: awdData.inbound_to_awd ?? 0,
                     totalUnits:
                         (fbaData.fba ?? 0) +
                         (fbaData.inbound_to_fba ?? 0) +
                         (awdData.awd ?? 0) +
-                        (awdData.inbound_to_awd ?? 0),
+                        (awdData.inbound_to_awd ?? 0) +
+                        (fbaData.reserved_units ?? 0),
                     reserved:
                         (fbaData.reserved_units ?? 0) +
                         (fbaData.reserved_fc_transfer ?? 0) +
                         (fbaData.reserved_fc_processing ?? 0),
-                    salesVelocity: salesVelocityMap.get(record.asin) ?? 0, // ✅ Add sales velocity from Sellerboard
-
-                    // ✅ Ensure required fields exist
+                    salesVelocity: salesVelocityMap.get(record.asin) ?? 0,
                     snapshotDate: record.snapshotDate ? new Date(record.snapshotDate) : new Date(),
                     createdAt: record.createdAt ? new Date(record.createdAt) : new Date(),
                     updatedAt: record.updatedAt ? new Date(record.updatedAt) : new Date(),
