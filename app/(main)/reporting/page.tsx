@@ -1,107 +1,95 @@
-//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/reporting
-
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
 import { DataTable } from 'primereact/datatable';
 import { Column } from 'primereact/column';
 import { Button } from 'primereact/button';
-import { InputText } from 'primereact/inputtext';
-import { Calendar } from 'primereact/calendar';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
-import { ProductService } from '@services/ProductService';
-import { OrderService } from '@services/OrderService';
-import { Product } from '@/types/products';
-import { Order } from '@/types/orders';
+import { InventoryRecordsService } from '@services/InventoryRecordsService';
 
 const Reporting = () => {
-    const [products, setProducts] = useState<Product[]>([]);
-    const [orders, setOrders] = useState<Order[]>([]);
-    const [reportData, setReportData] = useState<any[]>([]);
-    const [filterDate, setFilterDate] = useState<Date | null>(null);
+    const [inventoryRecords, setInventoryRecords] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const toast = useRef<Toast>(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const fetchedProducts = await ProductService.getProducts();
-                setProducts(fetchedProducts);
+                // Get all inventory records
+                const inventoryRecords = await InventoryRecordsService.getInventoryRecords();
+                const salesVelocityMap = await InventoryRecordsService.getSalesVelocity();
 
-                const fetchedOrders = await OrderService.getOrders();
-                setOrders(fetchedOrders);
+                // Merge FBA and AWD data per ASIN
+                const mergedRecords = inventoryRecords.map(record => ({
+                    asin: record.asin,
+                    sku: record.sku,
+                    salesVelocity: salesVelocityMap.get(record.asin) ?? 0, // ✅ Add sales velocity from Sellerboard
+                    fba: record.fba ?? 0,
+                    inbound_to_fba: record.inbound_to_fba ?? 0,
+                    awd: record.awd ?? 0,
+                    inbound_to_awd: record.inbound_to_awd ?? 0,
+                    reserved_units: record.reserved_units ?? 0,
+                    reserved_fc_transfer: record.reserved_fc_transfer ?? 0,
+                    reserved_fc_processing: record.reserved_fc_processing ?? 0,
+                    reserved_customer_order: record.reserved_customer_order ?? 0,
+                    totalUnits: (record.fba ?? 0) + (record.inbound_to_fba ?? 0) + (record.awd ?? 0) + (record.inbound_to_awd ?? 0) + (record.reserved_units ?? 0),
+                    reserved: (record.reserved_units ?? 0) + (record.reserved_fc_transfer ?? 0) + (record.reserved_fc_processing ?? 0),
+                    snapshotDate: record.snapshotDate ?? new Date(),
+                    createdAt: record.createdAt ?? new Date(),
+                    updatedAt: record.updatedAt ?? new Date(),
+                }));
+
+                setInventoryRecords(mergedRecords);
+                setLoading(false);
             } catch (error) {
-                console.error('Error fetching reporting data:', error);
-                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to fetch data', life: 3000 });
+                console.error("Error fetching inventory data:", error);
+                toast.current?.show({ severity: 'error', summary: 'Error', detail: 'Failed to fetch inventory records', life: 3000 });
+                setLoading(false);
             }
         };
 
         fetchData();
     }, []);
 
-    const generateReport = () => {
-        if (!filterDate) {
-            toast.current?.show({ severity: 'warn', summary: 'Warning', detail: 'Please select a month', life: 3000 });
-            return;
-        }
-
-        const selectedMonth = filterDate.getMonth();
-        const selectedYear = filterDate.getFullYear();
-
-        const filteredOrders = orders.filter((order) => {
-            if (!order.orderDate) return false;
-            const orderMonth = order.orderDate.getMonth();
-            const orderYear = order.orderDate.getFullYear();
-            return orderMonth === selectedMonth && orderYear === selectedYear;
-        });
-
-        const inventoryMap: { [sku: string]: { sku: string; productName: string; totalUnits: number; totalCartons: number } } = {};
-
-        products.forEach((product) => {
-            inventoryMap[product.sku || ''] = {
-                sku: product.sku || '',
-                productName: product.product,
-                totalUnits: 0,
-                totalCartons: 0
-            };
-        });
-
-        filteredOrders.forEach((order) => {
-            if (order.shipments) {
-                order.shipments.forEach((shipment) => {
-                    if (shipment.items) {
-                        shipment.items.forEach((item) => {
-                            if (inventoryMap[item.sku]) {
-                                inventoryMap[item.sku].totalUnits += item.unitCount;
-                                inventoryMap[item.sku].totalCartons += shipment.cartons; // Assuming cartons are per shipment
-                            }
-                        });
-                    }
-                });
-            }
-        });
-
-        const reportArray = Object.values(inventoryMap).filter((item) => item.sku !== '');
-
-        setReportData(reportArray);
-    };
-
     const exportCSV = () => {
-        if (reportData.length === 0) {
+        if (inventoryRecords.length === 0) {
             toast.current?.show({ severity: 'warn', summary: 'Warning', detail: 'No data to export', life: 3000 });
             return;
         }
-        // Implement CSV export logic
+
+        // Convert data to CSV format
+        const headers = ['ASIN', 'SKU', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
+        const csvData = inventoryRecords.map(record => [
+            record.asin,
+            record.sku,
+            record.salesVelocity,
+            record.fba,
+            record.reserved_units,
+            record.awd,
+            record.inbound_to_awd,
+            record.totalUnits,
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', 'inventory_report.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
-    const leftToolbarTemplate = () => {
-        return (
-            <React.Fragment>
-                <Button label="Generate Report" icon="pi pi-chart-bar" className="p-button-success mr-2" onClick={generateReport} />
-                <Button label="Export CSV" icon="pi pi-file" className="p-button-secondary" onClick={exportCSV} />
-            </React.Fragment>
-        );
-    };
+    const leftToolbarTemplate = () => (
+        <React.Fragment>
+            <Button label="Export CSV" icon="pi pi-file" className="p-button-secondary" onClick={exportCSV} />
+        </React.Fragment>
+    );
 
     return (
         <div className="grid crud-demo">
@@ -110,19 +98,16 @@ const Reporting = () => {
                     <Toast ref={toast} />
                     <Toolbar className="mb-4" left={leftToolbarTemplate}></Toolbar>
 
-                    <div className="p-fluid">
-                        <div className="p-field">
-                            <label htmlFor="month">Select Month</label>
-                            <Calendar id="month" value={filterDate} onChange={(e) => setFilterDate(e.value || null)} view="month" dateFormat="mm/yy" placeholder="Select a month" />
-                        </div>
-                    </div>
-
-                    {/* Report Table - Full Page Below */}
-                    <DataTable value={reportData} paginator rows={20} responsiveLayout="scroll" className="mt-4" rowHover>
+                    <DataTable value={inventoryRecords} paginator rows={20} loading={loading} responsiveLayout="scroll" className="mt-4" rowHover reorderableColumns>
+                        <Column field="asin" header="ASIN" sortable style={{ fontSize: '0.85em' }}></Column>
                         <Column field="sku" header="SKU" sortable style={{ fontSize: '0.85em' }}></Column>
-                        <Column field="productName" header="Product Name" sortable style={{ fontSize: '0.85em' }}></Column>
+                        <Column field="salesVelocity" header="Sales Velocity" sortable style={{ fontSize: '0.85em' }}></Column>
+                        <Column field="fba" header="FBA Stock" sortable style={{ fontSize: '0.85em' }}></Column>
+                        <Column field="reserved_units" header="FBA Reserved" sortable style={{ fontSize: '0.85em' }}></Column>
+                        <Column field="awd" header="AWD Stock" sortable style={{ fontSize: '0.85em' }}></Column>
+                        <Column field="inbound_to_awd" header="Inbound to AWD" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="totalUnits" header="Total Units" sortable style={{ fontSize: '0.85em' }}></Column>
-                        <Column field="totalCartons" header="Total Cartons" sortable style={{ fontSize: '0.85em' }}></Column>
+
                     </DataTable>
                 </div>
             </div>

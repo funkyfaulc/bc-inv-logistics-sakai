@@ -8,19 +8,98 @@ import { InventoryRecord } from '@/types/inventoryRecords';
 const inventoryCollection = collection(db, 'inventory_records');
 const fbaInventoryCollection = collection(db, 'fba_inventory');
 const awdInventoryCollection = collection(db, 'awd_inventory');
+const salesVelocityCollection = collection(db, 'sales_velocity');
+
 
 export const InventoryRecordsService = {
     /** ✅ Fetch all inventory records */
     async getInventoryRecords(): Promise<InventoryRecord[]> {
         try {
-            const snapshot = await getDocs(inventoryCollection);
-            return snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...(doc.data() as InventoryRecord),
-            }));
+            const inventorySnapshot = await getDocs(inventoryCollection);
+            const fbaSnapshot = await getDocs(fbaInventoryCollection);
+            const awdSnapshot = await getDocs(awdInventoryCollection);
+            const salesVelocityMap = await this.getSalesVelocity();
+
+            // Convert FBA, AWD, and Inventory collections into maps for easy merging
+            const fbaMap = new Map<string, any>();
+            fbaSnapshot.docs.forEach(doc => {
+                fbaMap.set(doc.id, doc.data());
+            });
+
+            const awdMap = new Map<string, any>();
+            awdSnapshot.docs.forEach(doc => {
+                awdMap.set(doc.id, doc.data());
+            });
+
+            // Merge data across collections
+            const mergedRecords: InventoryRecord[] = inventorySnapshot.docs.map(doc => {
+                const record = doc.data() as InventoryRecord;
+                const fbaData = fbaMap.get(record.asin) || {};
+                const awdData = awdMap.get(record.asin) || {};
+
+                console.log(
+                    `Debug ASIN: ${record.asin},
+                    Reserved Units: ${fbaData.reserved_units},
+                    FBA: ${fbaData.fba},
+                    Inbound to FBA: ${fbaData.inbound_to_fba},
+                    AWD: ${awdData.awd},
+                    Inbound to AWD: ${awdData.inbound_to_awd}`
+                );
+
+                return {
+                    asin: record.asin,
+                    sku: record.sku ?? "Unknown SKU",
+                    fba: fbaData.fba ?? 0,
+                    inbound_to_fba: fbaData.inbound_to_fba ?? 0,
+                    reserved_units: fbaData.reserved_units ?? 0,
+                    reserved_fc_transfer: fbaData.reserved_fc_transfer ?? 0,
+                    reserved_fc_processing: fbaData.reserved_fc_processing ?? 0,
+                    reserved_customer_order: fbaData.reserved_customer_order ?? 0,
+                    awd: awdData.awd ?? 0,
+                    inbound_to_awd: awdData.inbound_to_awd ?? 0,
+                    totalUnits:
+                        (fbaData.fba ?? 0) +
+                        (fbaData.inbound_to_fba ?? 0) +
+                        (awdData.awd ?? 0) +
+                        (awdData.inbound_to_awd ?? 0),
+                    reserved:
+                        (fbaData.reserved_units ?? 0) +
+                        (fbaData.reserved_fc_transfer ?? 0) +
+                        (fbaData.reserved_fc_processing ?? 0),
+                    salesVelocity: salesVelocityMap.get(record.asin) ?? 0, // ✅ Add sales velocity from Sellerboard
+
+                    // ✅ Ensure required fields exist
+                    snapshotDate: record.snapshotDate ? new Date(record.snapshotDate) : new Date(),
+                    createdAt: record.createdAt ? new Date(record.createdAt) : new Date(),
+                    updatedAt: record.updatedAt ? new Date(record.updatedAt) : new Date(),
+                };
+            });
+
+            return mergedRecords;
         } catch (error) {
             console.error("❌ Error fetching inventory records:", error);
             return [];
+        }
+    },
+
+   /** ✅ Fetch sales velocity data */
+    async getSalesVelocity(): Promise<Map<string, number>> {
+        try {
+            const snapshot = await getDocs(salesVelocityCollection);
+
+            const salesVelocityMap = new Map<string, number>();
+            snapshot.docs.forEach((doc) => {
+                const data = doc.data();
+                if (data.asin && data.salesVelocity) {
+                    salesVelocityMap.set(data.asin, data.salesVelocity);
+                }
+            });
+
+            console.log("✅ Sales Velocity Data Loaded:", salesVelocityMap);
+            return salesVelocityMap;
+        } catch (error) {
+            console.error("❌ Error fetching sales velocity:", error);
+            return new Map();
         }
     },
 
@@ -185,4 +264,35 @@ export const InventoryRecordsService = {
             console.error("❌ Error in bulk inventory upload:", error);
         }
     },
+
+    /** ✅ Bulk Upload Sales Velocity */
+    async bulkUploadSalesVelocity(salesData: { asin: string, sku: string, salesVelocity: number }[]): Promise<void> {
+        try {
+            console.time("Bulk Upload Sales Velocity");
+            const batch = writeBatch(db);
+
+            salesData.forEach(({ asin, sku, salesVelocity }) => {
+                if (!asin || asin === "ASIN" || asin.trim() === "") {
+                    console.warn(`⚠️ Skipping invalid ASIN:`, asin);
+                    return;
+                }
+
+                const docRef = doc(salesVelocityCollection, asin);
+                batch.set(docRef, {
+                    asin,
+                    sku,
+                    salesVelocity,
+                    snapshotDate: Timestamp.now(),
+                    updatedAt: Timestamp.now(),
+                }, { merge: true });
+            });
+
+            await batch.commit();
+            console.timeEnd("Bulk Upload Sales Velocity");
+            console.log(`✅ Sales Velocity Upload Complete.`);
+        } catch (error) {
+            console.error("❌ Error in bulk sales velocity upload:", error);
+        }
+    },
+
 };

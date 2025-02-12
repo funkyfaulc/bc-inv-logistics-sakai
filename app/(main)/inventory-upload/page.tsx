@@ -1,5 +1,3 @@
-//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/inventory-upload/page.tsx
-
 'use client';
 
 import React, { useRef, useState } from 'react';
@@ -17,6 +15,7 @@ const InventoryUpload = () => {
     const [inventoryUploadDialog, setInventoryUploadDialog] = useState(false);
     const [fbaFile, setFbaFile] = useState<File | null>(null);
     const [awdFile, setAwdFile] = useState<File | null>(null);
+    const [salesFile, setSalesFile] = useState<File | null>(null);
     const toast = useRef<Toast>(null);
 
     const FBA_COLUMN_MAP = {
@@ -25,9 +24,9 @@ const InventoryUpload = () => {
         fba: 6,
         inbound_to_fba: 52,
         reserved_units: 57,
-        reserved_fc_transfer: 85, 
-        reserved_fc_processing: 86, 
-        reserved_customer_order: 87, 
+        reserved_fc_transfer: 85,
+        reserved_fc_processing: 86,
+        reserved_customer_order: 87,
     };
 
     const AWD_COLUMN_MAP = {
@@ -37,13 +36,20 @@ const InventoryUpload = () => {
         awd: 6,
     };
 
+    const SALES_VELOCITY_COLUMN_MAP = {
+        asin: 0,
+        sku: 1,
+        salesVelocity: 6,
+    };
+
     const openInventoryUpload = () => setInventoryUploadDialog(true);
     const hideInventoryUploadDialog = () => setInventoryUploadDialog(false);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'fba' | 'awd') => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'fba' | 'awd' | 'sales') => {
         const file = e.target.files?.[0] || null;
         if (type === 'fba') setFbaFile(file);
         else if (type === 'awd') setAwdFile(file);
+        else if (type === 'sales') setSalesFile(file);
     };
 
     const parseCsvFileAsArray = (file: File, skipRows: number = 0): Promise<string[][]> => {
@@ -66,29 +72,33 @@ const InventoryUpload = () => {
     };
 
     const handleUpload = async () => {
-        if (!fbaFile || !awdFile) {
-            toast.current?.show({ severity: 'warn', summary: 'Missing Files', detail: 'Please upload both FBA and AWD files.', life: 3000 });
+        if (!fbaFile || !awdFile || !salesFile) {
+            toast.current?.show({ severity: 'warn', summary: 'Missing Files', detail: 'Please upload FBA, AWD, and Sales reports.', life: 3000 });
             return;
         }
-    
+
         try {
             const fbaData = await parseCsvFileAsArray(fbaFile, 1);
             const awdData = await parseCsvFileAsArray(awdFile, 1);
-    
+            const salesData = await parseCsvFileAsArray(salesFile, 1);
+
             const mergedRecords = await mergeFbaAndAwdData(fbaData, awdData);
-            console.log('Merged Records:', mergedRecords);
-    
-            // ✅ Call the optimized batch upload function
+            const salesVelocityRecords = parseSalesVelocity(salesData);
+
+            console.log('✅ Merged Inventory Records:', mergedRecords);
+            console.log('✅ Sales Velocity Records:', salesVelocityRecords);
+
+            // ✅ Upload data
             await InventoryRecordsService.bulkUploadInventory(mergedRecords);
-    
-            toast.current?.show({ severity: 'success', summary: 'Upload Successful', detail: 'Inventory records updated.', life: 3000 });
+            await InventoryRecordsService.bulkUploadSalesVelocity(salesVelocityRecords);
+
+            toast.current?.show({ severity: 'success', summary: 'Upload Successful', detail: 'Inventory and Sales Velocity records updated.', life: 3000 });
             hideInventoryUploadDialog();
         } catch (error) {
             console.error('❌ Error processing files:', error);
             toast.current?.show({ severity: 'error', summary: 'Upload Failed', detail: 'An error occurred during processing.', life: 3000 });
         }
     };
-
 
     const mergeFbaAndAwdData = async (fbaData: string[][], awdData: string[][]): Promise<InventoryRecord[]> => {
         const existingProducts: Product[] = await ProductService.getProducts();
@@ -154,14 +164,23 @@ const InventoryUpload = () => {
             }
         }
 
-        // ✅ Calculate total units for each record
-        recordsMap.forEach((record) => {
-            record.totalUnits = (record.fba || 0) + (record.inbound_to_fba || 0) + (record.awd || 0) + (record.inbound_to_awd || 0);
-        });
-
         return Array.from(recordsMap.values());
     };
 
+    const parseSalesVelocity = (salesData: string[][]): { asin: string, sku: string, salesVelocity: number }[] => {
+        return salesData
+            .filter(row => row[17]?.trim() === "Amazon.com") // ✅ Only include Amazon.com marketplace
+            .map(row => {
+                const rawVelocity = row[SALES_VELOCITY_COLUMN_MAP.salesVelocity]?.trim();
+                const parsedVelocity = rawVelocity ? parseFloat(rawVelocity) : 0;
+
+                return {
+                    asin: row[SALES_VELOCITY_COLUMN_MAP.asin]?.trim() || "Unknown ASIN",
+                    sku: row[SALES_VELOCITY_COLUMN_MAP.sku]?.trim() || "Unknown SKU",
+                    salesVelocity: isNaN(parsedVelocity) ? 0 : parsedVelocity,
+                };
+            });
+    };
     return (
         <div className="grid crud-demo">
             <div className="col-12">
@@ -174,9 +193,15 @@ const InventoryUpload = () => {
                             <label htmlFor="fba-file">FBA Report</label>
                             <InputText type="file" id="fba-file" accept=".csv" onChange={(e) => handleFileChange(e, 'fba')} />
                         </div>
+
                         <div className="field">
                             <label htmlFor="awd-file">AWD Report</label>
                             <InputText type="file" id="awd-file" accept=".csv" onChange={(e) => handleFileChange(e, 'awd')} />
+                        </div>
+
+                        <div className="field">
+                            <label htmlFor="sales-file">Sellerboard Sales Report</label>
+                            <InputText type="file" id="sales-file" accept=".csv" onChange={(e) => handleFileChange(e, 'sales')} />
                         </div>
                         <Button label="Process Files" icon="pi pi-check" severity="success" onClick={handleUpload} />
                     </Dialog>
