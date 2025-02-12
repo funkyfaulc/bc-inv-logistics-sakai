@@ -7,11 +7,18 @@ import { Button } from 'primereact/button';
 import { Toast } from 'primereact/toast';
 import { Toolbar } from 'primereact/toolbar';
 import { InventoryRecordsService } from '@services/InventoryRecordsService';
+import { MultiSelect } from 'primereact/multiselect';
 
 const Reporting = () => {
     const [inventoryRecords, setInventoryRecords] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const toast = useRef<Toast>(null);
+
+    const [selectedProductTypes, setSelectedProductTypes] = useState<string[]>([]);
+    const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+    const [selectedColors, setSelectedColors] = useState<string[]>([]);
+    const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -81,9 +88,37 @@ const Reporting = () => {
     };
 
     const leftToolbarTemplate = () => (
-        <React.Fragment>
+        <div className="flex align-items-center gap-3">
+            <MultiSelect
+                value={selectedProductTypes}
+                options={Array.from(new Set(inventoryRecords.map(item => item.productType)))}
+                onChange={(e) => setSelectedProductTypes(e.value)}
+                placeholder="Filter by Product Type"
+                className="p-multiselect-sm"
+            />
+            <MultiSelect
+                value={selectedSizes}
+                options={Array.from(new Set(inventoryRecords.map(item => item.size)))}
+                onChange={(e) => setSelectedSizes(e.value)}
+                placeholder="Filter by Size"
+                className="p-multiselect-sm"
+            />
+            <MultiSelect
+                value={selectedColors}
+                options={Array.from(new Set(inventoryRecords.map(item => item.color)))}
+                onChange={(e) => setSelectedColors(e.value)}
+                placeholder="Filter by Color"
+                className="p-multiselect-sm"
+            />
+            <MultiSelect
+                value={selectedMaterials}
+                options={Array.from(new Set(inventoryRecords.map(item => item.material)))}
+                onChange={(e) => setSelectedMaterials(e.value)}
+                placeholder="Filter by Material"
+                className="p-multiselect-sm"
+            />
             <Button label="Export CSV" icon="pi pi-file" className="p-button-secondary" onClick={exportCSV} />
-        </React.Fragment>
+        </div>
     );
 
     return (
@@ -93,7 +128,22 @@ const Reporting = () => {
                     <Toast ref={toast} />
                     <Toolbar className="mb-4" left={leftToolbarTemplate}></Toolbar>
 
-                    <DataTable value={inventoryRecords} paginator rows={20} loading={loading} responsiveLayout="scroll" className="mt-4" rowHover reorderableColumns>
+                    <DataTable
+                            value={inventoryRecords.filter(record =>
+                                (selectedProductTypes.length === 0 || selectedProductTypes.includes(record.productType)) &&
+                                (selectedSizes.length === 0 || selectedSizes.includes(record.size)) &&
+                                (selectedColors.length === 0 || selectedColors.includes(record.color)) &&
+                                (selectedMaterials.length === 0 || selectedMaterials.includes(record.material))
+                            )}
+                            paginator
+                            rows={20}
+                            loading={loading}
+                            responsiveLayout="scroll"
+                            className="mt-4"
+                            rowHover
+                            reorderableColumns
+                        >
+
                         {/* 🔄 Merged Product Column (Displays Everything) */}
                         <Column
                             header="Product"
@@ -106,12 +156,6 @@ const Reporting = () => {
                             )}
                             style={{ minWidth: "200px" }}
                         />
-
-                        {/* ✅ Hidden but Filterable Columns */}
-                        <Column field="productType" header="Product Type" sortable filter style={{ display: "none" }} />
-                        <Column field="size" header="Size" sortable filter style={{ display: "none" }} />
-                        <Column field="color" header="Color" sortable filter style={{ display: "none" }} />
-                        <Column field="material" header="Material" sortable filter style={{ display: "none" }} />
 
                         <Column field="salesVelocity" header="Sales Velocity" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="fba" header="FBA Stock" sortable style={{ fontSize: '0.85em' }} />
