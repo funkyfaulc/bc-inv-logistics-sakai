@@ -94,11 +94,25 @@ const Reporting = () => {
                     <Toolbar className="mb-4" left={leftToolbarTemplate}></Toolbar>
 
                     <DataTable value={inventoryRecords} paginator rows={20} loading={loading} responsiveLayout="scroll" className="mt-4" rowHover reorderableColumns>
-                        <Column field="asin" header="ASIN" sortable style={{ fontSize: '0.85em' }} />
-                        <Column field="sku" header="SKU" sortable style={{ fontSize: '0.85em' }} />
-                        <Column field="productType" header="Product Type" sortable style={{ fontSize: '0.85em' }} />
-                        <Column field="size" header="Size" sortable style={{ fontSize: '0.85em' }} />
-                        <Column field="color" header="Color" sortable style={{ fontSize: '0.85em' }} />
+                        {/* 🔄 Merged Product Column (Displays Everything) */}
+                        <Column
+                            header="Product"
+                            body={(rowData) => (
+                                <div style={{ lineHeight: "1.3", fontSize: "0.85em" }}>
+                                    <strong>{rowData.productType ?? "Unknown Product"}</strong> <br />
+                                    {rowData.sku} <br />
+                                    {rowData.size} • {rowData.color} • {rowData.material}
+                                </div>
+                            )}
+                            style={{ minWidth: "200px" }}
+                        />
+
+                        {/* ✅ Hidden but Filterable Columns */}
+                        <Column field="productType" header="Product Type" sortable filter style={{ display: "none" }} />
+                        <Column field="size" header="Size" sortable filter style={{ display: "none" }} />
+                        <Column field="color" header="Color" sortable filter style={{ display: "none" }} />
+                        <Column field="material" header="Material" sortable filter style={{ display: "none" }} />
+
                         <Column field="salesVelocity" header="Sales Velocity" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="fba" header="FBA Stock" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="reserved_units" header="FBA Reserved" sortable style={{ fontSize: '0.85em' }} />

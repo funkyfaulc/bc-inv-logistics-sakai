@@ -15,7 +15,7 @@ const productsCollection = collection(db, 'products_sk');
 
 
 export const InventoryRecordsService = {
-    /** ✅ Fetch all inventory records with product details */
+   /** ✅ Fetch all inventory records with product details */
     async getInventoryRecords(): Promise<InventoryRecord[]> {
         try {
             console.log("🔄 Fetching inventory records...");
@@ -42,7 +42,7 @@ export const InventoryRecordsService = {
 
             console.log("✅ Product Map Loaded:", productMap); // 🔍 Debugging the product map
 
-            // Merge data across collections
+            // ✅ Merge all records
             const mergedRecords: InventoryRecord[] = inventorySnapshot.docs.map(doc => {
                 const record = doc.data() as InventoryRecord;
                 const fbaData = fbaMap.get(record.asin) || {};
@@ -51,15 +51,16 @@ export const InventoryRecordsService = {
 
                 console.log(
                     `🔍 ASIN: ${record.asin} - Product Data:`,
-                    productData.product, productData.size, productData.color
+                    productData.product, productData.size, productData.color, productData.material
                 ); // 🔍 Debugging each product
 
                 return {
                     asin: record.asin,
                     sku: record.sku ?? "Unknown SKU",
-                    productType: productData.product ?? "Unknown Product", // ✅ Merge Product Type
-                    size: productData.size ?? "Unknown Size", // ✅ Merge Size
-                    color: productData.color ?? "Unknown Color", // ✅ Merge Color
+                    productType: productData.product ?? "Unknown Product",
+                    size: productData.size ?? "Unknown Size",
+                    color: productData.color ?? "Unknown Color",
+                    material: productData.material ?? "Unknown Material",
                     fba: fbaData.fba ?? 0,
                     inbound_to_fba: fbaData.inbound_to_fba ?? 0,
                     reserved_units: fbaData.reserved_units ?? 0,
@@ -79,6 +80,9 @@ export const InventoryRecordsService = {
                     snapshotDate: record.snapshotDate ? new Date(record.snapshotDate) : new Date(),
                     createdAt: record.createdAt ? new Date(record.createdAt) : new Date(),
                     updatedAt: record.updatedAt ? new Date(record.updatedAt) : new Date(),
+
+                    // ✅ Sellerboard-style Merged Product Display
+                    productDisplay: `${record.asin} - ${record.sku} | ${productData.product ?? "Unknown"} - ${productData.size ?? "Unknown"} - ${productData.color ?? "Unknown"} (${productData.material ?? "Unknown"})`,
                 };
             });
 
