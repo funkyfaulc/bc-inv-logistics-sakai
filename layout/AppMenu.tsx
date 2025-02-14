@@ -31,16 +31,18 @@ const AppMenu = () => {
                 },
 
                 {
-                    label: 'Inventory',
+                    label: 'Inventory Reporting',
+                    icon: 'pi pi-fw pi-chart-line',
+                    to: '/reporting/'
+                },
+
+                {
+                    label: 'Inventory Data Prep',
                     icon: 'pi pi-fw pi-database',
                     to: '/inventory-upload'
                 },
 
-                {
-                    label: 'EOM Inventory',
-                    icon: 'pi pi-fw pi-chart-line',
-                    to: '/reporting/'
-                },
+
 
                 {
                     label: 'Order Production',

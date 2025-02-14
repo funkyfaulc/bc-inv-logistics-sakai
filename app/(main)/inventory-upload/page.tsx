@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
 import { Dialog } from 'primereact/dialog';
@@ -10,12 +10,47 @@ import { InventoryRecordsService } from '@services/InventoryRecordsService';
 import ProductService from '@services/ProductService';
 import { InventoryRecord } from '../../../types/inventoryRecords';
 import { Product } from '../../../types/products';
+import { doc, setDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/app/firebase';
+import { DataTable } from 'primereact/datatable';
+import { Column } from 'primereact/column';
+
 
 const InventoryUpload = () => {
     const [inventoryUploadDialog, setInventoryUploadDialog] = useState(false);
     const [fbaFile, setFbaFile] = useState<File | null>(null);
     const [awdFile, setAwdFile] = useState<File | null>(null);
     const [salesFile, setSalesFile] = useState<File | null>(null);
+    const [snapshots, setSnapshots] = useState<any[]>([]);
+    const [selectedSnapshot, setSelectedSnapshot] = useState<any | null>(null);
+
+    const fetchSnapshots = async () => {
+        try {
+            const snapshotCollection = collection(db, 'inventory_snapshots');
+            const snapshotQuery = query(snapshotCollection, orderBy('createdAt', 'desc'));
+            const snapshotDocs = await getDocs(snapshotQuery);
+
+            const snapshotData = snapshotDocs.docs.map((doc): any => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    createdAt: data.createdAt?.seconds ? data.createdAt : { seconds: Math.floor(Date.now() / 1000) },
+                    totalUnits: data.records?.reduce((acc: number, item: any) => acc + (item.totalUnits || 0), 0) || 0,
+                    records: data.records || []
+                };
+            });
+
+            setSnapshots(snapshotData);
+        } catch (error) {
+            console.error("❌ Error fetching snapshots:", error);
+        }
+    };
+
+    // Fetch snapshots on page load
+    useEffect(() => {
+        fetchSnapshots();
+    }, []);
+
     const toast = useRef<Toast>(null);
 
     const FBA_COLUMN_MAP = {
@@ -91,6 +126,34 @@ const InventoryUpload = () => {
             // ✅ Upload data
             await InventoryRecordsService.bulkUploadInventory(mergedRecords);
             await InventoryRecordsService.bulkUploadSalesVelocity(salesVelocityRecords);
+
+            // ✅ Write snapshot to Firestore at the moment of processing
+            const snapshotData = {
+                snapshotType: "Auto",
+                totalUnits: mergedRecords.reduce((acc, item) => acc + (item.fba || 0) + (item.awd || 0), 0),
+                records: mergedRecords.map(item => ({
+                    asin: item.asin,
+                    sku: item.sku,
+                    productType: item.productType || "Unknown",
+                    size: item.size || "Unknown",
+                    color: item.color || "Unknown",
+                    salesVelocity: salesVelocityRecords.find(sv => sv.asin === item.asin)?.salesVelocity || 0,
+                    fbaStock: item.fba || 0,
+                    fbaReserved: item.reserved_units || 0,
+                    awdStock: item.awd || 0,
+                    inboundToAwd: item.inbound_to_awd || 0,
+                    totalUnits: (item.fba || 0) + (item.awd || 0),
+                })),
+                createdAt: new Date(), // ✅ Ensure createdAt timestamp is included
+            };
+
+           // ✅ Save snapshot to Firestore
+            await setDoc(doc(db, 'inventory_snapshots', new Date().toISOString()), snapshotData);
+
+            console.log("✅ Snapshot saved!");
+
+            // ✅ Refresh snapshots so the table updates automatically
+            await fetchSnapshots();
 
             toast.current?.show({ severity: 'success', summary: 'Upload Successful', detail: 'Inventory and Sales Velocity records updated.', life: 3000 });
             hideInventoryUploadDialog();
@@ -181,12 +244,116 @@ const InventoryUpload = () => {
                 };
             });
     };
+
+    const handleDownloadCSV = (snapshot: any) => {
+        if (!snapshot.records || snapshot.records.length === 0) {
+            toast.current?.show({ severity: 'warn', summary: 'No Data', detail: 'This snapshot contains no records.', life: 3000 });
+            return;
+        }
+
+        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
+
+        const csvData = snapshot.records.map((record: any) => [
+            record.asin || '',
+            record.sku || '',
+            record.productType || 'Unknown',
+            record.size || 'Unknown',
+            record.color || 'Unknown',
+            record.salesVelocity || 0,
+            record.fbaStock || 0,
+            record.fbaReserved || 0,
+            record.awdStock || 0,
+            record.inboundToAwd || 0,
+            record.totalUnits || 0,
+        ]);
+
+        const csvContent = [headers.join(','), ...csvData.map((row: (string | number)[]) => row.join(','))].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute('download', `Inventory_Snapshot_${snapshot.id}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+
     return (
         <div className="grid crud-demo">
             <div className="col-12">
                 <div className="card">
                     <Toast ref={toast} />
                     <Button label="Upload Inventory Reports" icon="pi pi-upload" severity="info" onClick={openInventoryUpload} />
+
+                    {/* ✅ Inventory Snapshots Section */}
+                    <div className="card mt-4">
+                        <h5>Inventory Snapshots</h5>
+                        {snapshots.length === 0 ? (
+                            <p>No snapshots available.</p>
+                        ) : (
+                            <div className="table-responsive">
+                                <DataTable
+                                    value={snapshots}
+                                    paginator
+                                    rows={5}
+                                    responsiveLayout="scroll"
+                                    selection={selectedSnapshot}
+                                    selectionMode="single"
+                                    onSelectionChange={(e) => setSelectedSnapshot(e.value)}
+                                >
+                                    <Column
+                                        field="createdAt"
+                                        header="Snapshot Date"
+                                        body={(rowData) =>
+                                            rowData.createdAt?.seconds
+                                                ? new Date(rowData.createdAt.seconds * 1000).toLocaleString()
+                                                : 'Invalid Date'
+                                        }
+                                        sortable
+                                    />
+                                    <Column field="totalUnits" header="Total Units" sortable body={(rowData) => rowData.totalUnits || 0}/>
+                                    <Column
+                                        header="Download"
+                                        body={(rowData) => (
+                                            <Button icon="pi pi-download" className="p-button-sm" onClick={() => handleDownloadCSV(rowData)} />
+                                        )}
+                                    />
+                                </DataTable>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="card mt-4">
+                        <h5>Snapshot Records</h5>
+                        {snapshots.length === 0 ? (
+                            <p>No snapshots available.</p>
+                        ) : selectedSnapshot ? (
+                            <div key={selectedSnapshot.id} className="mb-3">
+                                <h6>
+                                    {selectedSnapshot?.createdAt?.seconds
+                                        ? new Date(selectedSnapshot.createdAt.seconds * 1000).toLocaleString()
+                                        : 'No Date Available'}
+                                </h6>
+                                <DataTable value={selectedSnapshot.records || []} paginator rows={10} responsiveLayout="scroll">
+                                    <Column field="asin" header="ASIN" sortable />
+                                    <Column field="sku" header="SKU" sortable />
+                                    <Column field="productType" header="Product Type" sortable />
+                                    <Column field="size" header="Size" sortable />
+                                    <Column field="color" header="Color" sortable />
+                                    <Column field="salesVelocity" header="Sales Velocity" sortable />
+                                    <Column field="fbaStock" header="FBA Stock" sortable />
+                                    <Column field="fbaReserved" header="FBA Reserved" sortable />
+                                    <Column field="awdStock" header="AWD Stock" sortable />
+                                    <Column field="inboundToAwd" header="Inbound to AWD" sortable />
+                                    <Column field="totalUnits" header="Total Units" sortable />
+                                </DataTable>
+                            </div>
+                        ) : (
+                            <p>Select a snapshot to view its records.</p>  // ✅ Add a message when no snapshot is selected
+                        )}
+                    </div>
+
 
                     <Dialog visible={inventoryUploadDialog} style={{ width: '450px' }} header="Upload Inventory Reports" modal className="p-fluid" onHide={hideInventoryUploadDialog}>
                         <div className="field">

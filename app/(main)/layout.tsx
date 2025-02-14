@@ -11,7 +11,7 @@ interface AppLayoutProps {
 
 // Separate metadata and viewport exports
 export const metadata: Metadata = {
-    title: 'PrimeReact Sakai',
+    title: 'BC Inv Logistics',
     description: 'The ultimate collection of design-agnostic, flexible and accessible React UI Components.',
     robots: { index: false, follow: false },
     openGraph: {
