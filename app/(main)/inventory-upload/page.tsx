@@ -120,6 +120,21 @@ const InventoryUpload = () => {
             const mergedRecords = await mergeFbaAndAwdData(fbaData, awdData);
             const salesVelocityRecords = parseSalesVelocity(salesData);
 
+            // 🔍 Fetch product details from `products_sk`
+            const productsSnapshot = await getDocs(collection(db, 'products_sk'));
+            const productDataMap = new Map<string, any>();
+
+            productsSnapshot.forEach((doc) => {
+                const product = doc.data();
+                productDataMap.set(product.asin, {
+                    productType: product.productType || "Unknown",
+                    size: product.size || "Unknown",
+                    color: product.color || "Unknown",
+                });
+            });
+
+
+
             console.log('✅ Merged Inventory Records:', mergedRecords);
             console.log('✅ Sales Velocity Records:', salesVelocityRecords);
 
@@ -127,30 +142,54 @@ const InventoryUpload = () => {
             await InventoryRecordsService.bulkUploadInventory(mergedRecords);
             await InventoryRecordsService.bulkUploadSalesVelocity(salesVelocityRecords);
 
-            // ✅ Write snapshot to Firestore at the moment of processing
-            const snapshotData = {
-                snapshotType: "Auto",
-                totalUnits: mergedRecords.reduce((acc, item) => acc + (item.fba || 0) + (item.awd || 0), 0),
-                records: mergedRecords.map(item => ({
+            // ✅ Fetch product details from `products_sk`
+            const productDocs = await getDocs(collection(db, "products_sk"));
+            const productMap = new Map(
+                productDocs.docs.map(doc => {
+                    const data = doc.data();
+                    return [data.asin, { size: data.size || "Unknown", color: data.color || "Unknown", product: data.product || "Unknown" }];
+                })
+            );
+
+            // ✅ Create enriched snapshot records
+            const enrichedRecords = mergedRecords.map(item => {
+                const productDetails = productMap.get(item.asin) || {
+                    size: "Unknown",
+                    color: "Unknown",
+                    product: "Unknown"
+                };
+
+                return {
                     asin: item.asin,
                     sku: item.sku,
-                    productType: item.productType || "Unknown",
-                    size: item.size || "Unknown",
-                    color: item.color || "Unknown",
+                    productType: productDetails.product,
+                    size: productDetails.size,
+                    color: productDetails.color,
                     salesVelocity: salesVelocityRecords.find(sv => sv.asin === item.asin)?.salesVelocity || 0,
                     fbaStock: item.fba || 0,
                     fbaReserved: item.reserved_units || 0,
                     awdStock: item.awd || 0,
                     inboundToAwd: item.inbound_to_awd || 0,
                     totalUnits: (item.fba || 0) + (item.awd || 0),
-                })),
-                createdAt: new Date(), // ✅ Ensure createdAt timestamp is included
+                };
+            });
+
+            //Debug logs
+            console.log("🔍 Product Data Map Size:", productDataMap.size);
+            console.log("🔍 Sample Product Data:", Array.from(productDataMap.entries())[0]);  // Check if ASINs exist
+            console.log("🔍 Enriched Records (First 5):", enrichedRecords.slice(0, 5));
+
+            // ✅ Store in `inventory_snapshots`
+            const snapshotData = {
+                snapshotType: "Auto",
+                totalUnits: enrichedRecords.reduce((acc, item) => acc + item.totalUnits, 0),
+                records: enrichedRecords,
+                createdAt: new Date(),
             };
 
-           // ✅ Save snapshot to Firestore
+            // ✅ Save snapshot to Firestore
             await setDoc(doc(db, 'inventory_snapshots', new Date().toISOString()), snapshotData);
-
-            console.log("✅ Snapshot saved!");
+            console.log("✅ Snapshot saved with enriched product data!");
 
             // ✅ Refresh snapshots so the table updates automatically
             await fetchSnapshots();
