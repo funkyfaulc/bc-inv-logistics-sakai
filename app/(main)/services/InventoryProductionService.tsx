@@ -3,6 +3,7 @@ import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
 import { OrderItemFirestore, OrderItem, Order } from "@/types/orders";
 import { writeBatch, doc, Timestamp } from "firebase/firestore";
 
+
 // ✅ Firestore References
 const inventoryProductionRef = collection(db, "inventory_production");
 const productsCollectionRef = collection(db, "products_sk");

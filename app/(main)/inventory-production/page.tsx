@@ -14,6 +14,7 @@ import { getActiveOrders, getOrderProducts, saveInventoryProduction, fetchInvent
 import { Order, OrderItem, OrderItemFirestore } from "@/types/orders";
 import { MultiSelect } from "primereact/multiselect";
 import ProductService from "@services/ProductService"; // ✅ Ensure correct path
+import { Card } from "primereact/card";
 
 const InventoryProduction = () => {
     const [orders, setOrders] = useState<Order[]>([]);
@@ -69,18 +70,18 @@ const InventoryProduction = () => {
                 .then((data: OrderItem[]) => {
                     console.log("✅ Data returned from Firestore:", data);
                     setOrderProducts(data);
-                    
+
                     // Initialize cartonCounts and spareUnits from Firestore data
                     const newCartonCounts: Record<string, number> = {};
                     const newSpareUnits: Record<string, number> = {};
-                    
+
                     data.forEach((item) => {
                         newCartonCounts[item.asin] = item.totalCartonCount || 0;
                         // Calculate spare units by subtracting carton units from total
                         const cartonUnits = (item.totalCartonCount || 0) * (item.unitsPerCarton || 1);
                         newSpareUnits[item.asin] = (item.totalUnitCount || 0) - cartonUnits;
                     });
-                    
+
                     setCartonCounts(newCartonCounts);
                     setSpareUnits(newSpareUnits);
                 })
@@ -101,7 +102,7 @@ const InventoryProduction = () => {
     };
 
     // ✅ Calculate total units
-    const calculateTotalUnits = (product: OrderItem) => {
+    const calculateTotalUnitsPerProduct = (product: OrderItem) => {
         const unitsPerCarton = product.unitsPerCarton ?? 1; // ✅ Use fetched unitsPerCarton
         return (cartonCounts[product.asin] ?? 0) * unitsPerCarton + (spareUnits[product.asin] ?? 0);
     };
@@ -116,7 +117,7 @@ const InventoryProduction = () => {
         const productionData = orderProducts.map((product) => ({
             asin: product.asin,
             sku: product.sku,
-            totalUnitCount: calculateTotalUnits(product),
+            totalUnitCount: calculateTotalUnitsPerProduct(product),
             totalCartonCount: cartonCounts[product.asin] ?? 0,
             unitsPerCarton: product.unitsPerCarton ?? 1,
             orderId: selectedOrder.orderId,
@@ -140,6 +141,16 @@ const InventoryProduction = () => {
             toast.current?.show({ severity: "error", summary: "Error", detail: "Failed to save production data." });
         }
     };
+
+    const calculateTotalUnits = () => {
+        return orderProducts.reduce((sum, item) => sum + (cartonCounts[item.asin] ?? 0) * (item.unitsPerCarton || 1) + (spareUnits[item.asin] ?? 0), 0);
+    };
+
+    // Placeholder for COGS (replace with actual logic later)
+    const calculateTotalCOGS = () => {
+        return 0; // Placeholder, will update when COGS data is available
+    }
+
 
     return (
         <div className="p-4">
@@ -170,6 +181,27 @@ const InventoryProduction = () => {
                 placeholder="Search SKU..."
                 className="p-inputtext p-component w-full md:w-20rem mb-3"
             />
+
+            {/*Scorecard UI */}
+            <Card className="p-4 mb-4 shadow-2 border-round">
+                <div className="flex justify-content-between align-items-center">
+                    <div>
+                        <h2 className="text-lg font-bold">Order Summary</h2>
+                        <p className="text-sm text-secondary">Updated in real-time</p>
+                    </div>
+                    <div className="flex gap-4">
+                        <div>
+                            <p className="text-xl font-semibold">{calculateTotalUnits()}</p>
+                            <p className="text-sm text-secondary">Total Units</p>
+                        </div>
+                        <div>
+                            <p className="text-xl font-semibold">${calculateTotalCOGS()}</p>
+                            <p className="text-sm text-secondary">Total COGS</p>
+                        </div>
+                    </div>
+                </div>
+            </Card>
+
 
             {/* Data Table Section */}
             {selectedOrder && (
@@ -207,7 +239,7 @@ const InventoryProduction = () => {
                             )}
                         />
                         <Column header="Total Units"
-                            body={(rowData) => calculateTotalUnits(rowData)}                        />
+                            body={(rowData) => calculateTotalUnitsPerProduct(rowData)}                        />
                     </DataTable>
 
                     {loading && <p className="text-center">Loading products...</p>}
