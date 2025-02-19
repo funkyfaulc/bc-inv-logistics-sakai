@@ -4,6 +4,7 @@ export interface InventoryRecord {
     id?: string; // Firestore document ID
     asin: string; // ASIN for linking to a product
     sku?: string; // Optional SKU for internal identification
+    salesVelocity?: number; // ✅ Added Sales Velocity
     productType?: string; // ✅ Added Product Type
     size?: string; // ✅ Added Size
     color?: string; // ✅ Added Color

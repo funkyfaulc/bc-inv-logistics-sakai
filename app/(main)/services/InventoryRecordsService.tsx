@@ -306,4 +306,39 @@ export const InventoryRecordsService = {
         }
     },
 
+       /** ✅ Save an inventory snapshot with full product details */
+    async saveInventorySnapshot(inventoryRecords: InventoryRecord[]): Promise<void> {
+        try {
+            if (inventoryRecords.length === 0) {
+                console.warn("⚠️ No inventory records to save in snapshot.");
+                return;
+            }
+
+            const snapshotCollection = collection(db, 'inventory_snapshots');
+
+            const snapshotData = {
+                createdAt: Timestamp.now(),
+                records: inventoryRecords.map(record => ({
+                    asin: record.asin,
+                    sku: record.sku,
+                    productType: record.productType ?? "Unknown",
+                    size: record.size ?? "Unknown",
+                    color: record.color ?? "Unknown",
+                    salesVelocity: record.salesVelocity ?? 0,
+                    fbaStock: record.fba ?? 0,
+                    fbaReserved: record.reserved_units ?? 0,
+                    awdStock: record.awd ?? 0,
+                    inboundToAwd: record.inbound_to_awd ?? 0,
+                    totalUnits: record.totalUnits ?? 0,
+                })),
+            };
+
+            await addDoc(snapshotCollection, snapshotData);
+
+            console.log("✅ Inventory snapshot saved with full product details.");
+        } catch (error) {
+            console.error("❌ Error saving inventory snapshot:", error);
+        }
+    },
+
 };
