@@ -33,10 +33,13 @@ const Reporting = () => {
                     const sizeB = b.size ?? "Unknown Size";
                     const colorA = a.color ?? "Unknown Color";
                     const colorB = b.color ?? "Unknown Color";
+                    const skuA = a.sku ?? "Unknown SKU";
+                    const skuB = b.sku ?? "Unknown SKU";
 
                     if (productA !== productB) return productA.localeCompare(productB);
                     if (sizeA !== sizeB) return sizeA.localeCompare(sizeB);
-                    return colorA.localeCompare(colorB);
+                    if (colorA != colorB) return colorA.localeCompare(colorB);
+                    return skuA.localeCompare(skuB); // ✅ Final tie-breaker: sort by SKU
                 });
 
                 setInventoryRecords(inventoryRecords);
@@ -57,14 +60,16 @@ const Reporting = () => {
             return;
         }
 
+
         // Convert data to CSV format
-        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
+        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Material', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
         const csvData = inventoryRecords.map(record => [
             record.asin,
             record.sku,
             record.productType,
             record.size,
             record.color,
+            record.material ?? "Unknown Material",
             record.salesVelocity,
             record.fba,
             record.reserved_units,

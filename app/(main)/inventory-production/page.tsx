@@ -1,3 +1,6 @@
+//bc-inventory-logistics-app/bc-inv-logistics-sakai/app/(main)/inventory-production/page.tsx
+
+
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -7,8 +10,8 @@ import { Column } from "primereact/column";
 import { InputNumber } from "primereact/inputnumber";
 import { Button } from "primereact/button";
 import { Toast } from "primereact/toast";
-import { getActiveOrders, getOrderProducts, saveInventoryProduction } from "@services/InventoryProductionService";
-import { Order, OrderItem } from "@/types/orders";
+import { getActiveOrders, getOrderProducts, saveInventoryProduction, fetchInventoryProduction} from "@services/InventoryProductionService";
+import { Order, OrderItem, OrderItemFirestore } from "@/types/orders";
 import { MultiSelect } from "primereact/multiselect";
 import ProductService from "@services/ProductService"; // ✅ Ensure correct path
 
@@ -56,9 +59,34 @@ const InventoryProduction = () => {
 
     useEffect(() => {
         if (selectedOrder) {
-            fetchProducts(selectedOrder.orderId);
-        } else {
-            setOrderProducts([]);
+            console.log(`🔄 Fetching production data for Order ID: ${selectedOrder.orderId}`);
+
+            setOrderProducts([]); // Reset state before fetching
+            setCartonCounts({});
+            setSpareUnits({});
+
+            fetchInventoryProduction(selectedOrder.orderId)
+                .then((data: OrderItem[]) => {
+                    console.log("✅ Data returned from Firestore:", data);
+                    setOrderProducts(data);
+                    
+                    // Initialize cartonCounts and spareUnits from Firestore data
+                    const newCartonCounts: Record<string, number> = {};
+                    const newSpareUnits: Record<string, number> = {};
+                    
+                    data.forEach((item) => {
+                        newCartonCounts[item.asin] = item.totalCartonCount || 0;
+                        // Calculate spare units by subtracting carton units from total
+                        const cartonUnits = (item.totalCartonCount || 0) * (item.unitsPerCarton || 1);
+                        newSpareUnits[item.asin] = (item.totalUnitCount || 0) - cartonUnits;
+                    });
+                    
+                    setCartonCounts(newCartonCounts);
+                    setSpareUnits(newSpareUnits);
+                })
+                .catch((error: unknown) => {
+                    console.error("🔥 Error loading production data:", error);
+                });
         }
     }, [selectedOrder]);
 
@@ -79,7 +107,7 @@ const InventoryProduction = () => {
     };
 
     // ✅ Handle saving production data
-   const handleSave = async () => {
+    const handleSave = async () => {
         if (!selectedOrder) {
             toast.current?.show({ severity: "warn", summary: "No Order Selected", detail: "Please select an order first." });
             return;
@@ -90,31 +118,27 @@ const InventoryProduction = () => {
             sku: product.sku,
             totalUnitCount: calculateTotalUnits(product),
             totalCartonCount: cartonCounts[product.asin] ?? 0,
-            unitsPerCarton: product.unitsPerCarton ?? 1, // ✅ Include when saving
+            unitsPerCarton: product.unitsPerCarton ?? 1,
             orderId: selectedOrder.orderId,
         }));
 
         console.log("🔥 Saving Production Data:", productionData);
 
         try {
-            await saveInventoryProduction(
-                productionData.map((item) => ({
-                    ...item,
-                    orderId: selectedOrder.orderId, // ✅ Ensure orderId is passed
-                }))
-            );
+            await saveInventoryProduction(productionData);
+            console.log("✅ Production data saved! Now forcing a refresh...");
+
+            // ✅ Immediately fetch the latest data after saving
+            const refreshedData = await fetchInventoryProduction(selectedOrder.orderId);
+            console.log("✅ Fetched After Save:", refreshedData);
+            setOrderProducts(refreshedData);
+
             toast.current?.show({ severity: "success", summary: "Saved", detail: "Production data saved successfully." });
 
-            // ✅ Delay re-fetching to ensure Firestore has updated
-            setTimeout(() => {
-                if (selectedOrder) {
-                    fetchProducts(selectedOrder.orderId);
-                }
-                }, 700);
-            } catch (error) {
-                console.error("🔥 Error saving production data:", error);
-                toast.current?.show({ severity: "error", summary: "Error", detail: "Failed to save production data." });
-            }
+        } catch (error) {
+            console.error("🔥 Error saving production data:", error);
+            toast.current?.show({ severity: "error", summary: "Error", detail: "Failed to save production data." });
+        }
     };
 
     return (

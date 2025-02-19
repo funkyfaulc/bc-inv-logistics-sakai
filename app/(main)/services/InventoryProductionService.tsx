@@ -9,35 +9,68 @@ const productsCollectionRef = collection(db, "products_sk");
 const ordersCollectionRef = collection(db, "orders");
 
 // ✅ Function: Fetch Inventory Production Data
-export const fetchInventoryProduction = async (orderId: string): Promise<OrderItemFirestore[]> => {
+export const fetchInventoryProduction = async (orderId: string): Promise<OrderItem[]> => {
     try {
         if (!orderId) {
             console.error("❌ fetchInventoryProduction called with missing orderId");
             return [];
         }
 
-        // ✅ Fetch all products in `inventory_production` that match this orderId
-        const q = query(collection(db, "inventory_production"), where("orderId", "==", orderId));
-        const snapshot = await getDocs(q);
+        console.log(`📌 Fetching production data for Order: ${orderId}`);
 
-        if (snapshot.empty) {
-            console.warn(`⚠️ No production data found for order: ${orderId}`);
-            return [];
-        }
+        // 🔹 Fetch existing production data from `inventory_production/{orderId}/products`
+        const productionQuery = collection(db, "inventory_production", orderId, "products");
+        const productionSnapshot = await getDocs(productionQuery);
 
-        return snapshot.docs.map((doc) => {
+        let existingProductionMap: Record<string, OrderItemFirestore> = {};
+        productionSnapshot.docs.forEach(doc => {
             const data = doc.data();
-            return {
-                id: doc.id,
-                asin: data.asin || "MISSING_ASIN",
+            existingProductionMap[doc.id] = {
+                asin: doc.id,
                 sku: data.sku || "MISSING_SKU",
                 totalUnitCount: data.totalUnitCount ?? 0,
                 totalCartonCount: data.totalCartonCount ?? 0,
                 unitsPerCarton: data.unitsPerCarton ?? 1,
-                orderId: data.orderId || orderId, // ✅ Ensure orderId is always included
-                updatedAt: data.updatedAt || Timestamp.now(),
-            } as OrderItemFirestore;
+                orderId, // ✅ FIX: Ensure orderId is always included
+            };
         });
+
+        console.log(`✅ Firestore returned ${Object.keys(existingProductionMap).length} ASINs for order: ${orderId}`);
+        console.log("🔥 Raw Firestore Data:", productionSnapshot.docs.map(doc => doc.data()));
+
+        // 🔹 Fetch ALL available products from `products_sk`
+        const productsSnapshot = await getDocs(collection(db, "products_sk"));
+        let allProducts: Record<string, OrderItem> = {};
+
+        productsSnapshot.docs.forEach((doc) => {
+            const data = doc.data();
+            const asin = data.asin || `UNKNOWN_ASIN_${doc.id}`; // ✅ Ensure ASIN exists
+            allProducts[asin] = {
+                id: asin,
+                asin,
+                sku: data.sku || "UNKNOWN_SKU",
+                product: data.product || "Unknown Product", // ✅ Ensure product names exist
+                unitsPerCarton: data.unitsPerCarton || 1,
+                totalUnitCount: 0, // Default to 0, updated if found in existing production
+                totalCartonCount: 0,
+            };
+        });
+
+        console.log(`📌 Available products from products_sk: ${Object.keys(allProducts).length}`);
+
+        // 🔹 Merge production data with available products
+        const mergedProducts: OrderItem[] = Object.keys(allProducts).map((asin) => ({
+            id: asin,
+            asin,
+            sku: existingProductionMap[asin]?.sku ?? allProducts[asin]?.sku ?? "UNKNOWN_SKU",
+            product: allProducts[asin]?.product ?? "Unknown Product",  // ✅ Ensure product names are included
+            totalUnitCount: existingProductionMap[asin]?.totalUnitCount ?? 0,
+            totalCartonCount: existingProductionMap[asin]?.totalCartonCount ?? 0,
+            unitsPerCarton: existingProductionMap[asin]?.unitsPerCarton ?? allProducts[asin]?.unitsPerCarton ?? 1,
+        }));
+
+        console.log(`✅ Final Merged Products List for ${orderId}:`, mergedProducts);
+        return mergedProducts;
     } catch (error) {
         console.error("🔥 Error fetching production data:", error);
         return [];
@@ -114,15 +147,17 @@ export const saveInventoryProduction = async (productionData: OrderItemFirestore
     productionData.forEach((item) => {
         if (!item.asin || !item.orderId) {
             console.error("❌ Missing ASIN or OrderId for item:", item);
-            return; 
+            return;
         }
 
-        const docRef = doc(db, "inventory_production", item.asin); // ✅ Store by ASIN instead of OrderID
+        const orderRef = doc(db, "inventory_production", item.orderId); // ✅ Save under OrderId
+        const productRef = doc(orderRef, "products", item.asin); // ✅ Store products inside orderId
 
-        batch.set(docRef, {
-            ...item,
-            orderId: item.orderId, // ✅ Ensure orderId is stored inside the document
-            sku: item.sku, 
+        batch.set(productRef, {
+            sku: item.sku,
+            totalUnitCount: item.totalUnitCount,
+            totalCartonCount: item.totalCartonCount,
+            unitsPerCarton: item.unitsPerCarton,
             updatedAt: Timestamp.now(),
         }, { merge: true });
     });
@@ -130,3 +165,4 @@ export const saveInventoryProduction = async (productionData: OrderItemFirestore
     await batch.commit();
     console.log("✅ Inventory production data saved!");
 };
+

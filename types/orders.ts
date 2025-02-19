@@ -117,5 +117,6 @@ export interface OrderItemFirestore {
     sku: string;
     totalUnitCount: number;
     totalCartonCount: number;
+    unitsPerCarton: number;
     updatedAt?: any;
 }
