@@ -37,3 +37,11 @@ export interface ProductType {
         };
     };
 }
+
+// ✅ Ensure this is in products.ts
+
+export interface MaterialConfig {
+    validColors: string[]; // Required
+    validSizes: string[];  // Required
+    metersPerSize?: { [key: string]: number }; // Optional
+}
