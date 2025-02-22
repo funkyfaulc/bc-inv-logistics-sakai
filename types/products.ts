@@ -1,9 +1,8 @@
 // bc-inv-logistics-sakai/types/products.ts
-
-import { Timestamp } from 'firebase/firestore'; // Import Firestore Timestamp
+import { Timestamp } from 'firebase/firestore';
 
 export interface Product {
-    id: string; // Firestore document ID
+    id: string;
     product: string;
     material?: string;
     color?: string;
@@ -11,9 +10,30 @@ export interface Product {
     asin?: string;
     sku?: string;
     upc?: string;
-    validColors?: string[]; // New field for color options
-    validSizes?: string[]; // New field for size options
+    validColors?: string[];
+    validSizes?: string[];
     created_at?: Timestamp;
     updated_at?: Timestamp;
-    unitsPerCarton: number; 
+    unitsPerCarton: number;
+}
+
+// ✅ Simplified ProductType without `MaterialConfig`
+export interface ProductType {
+    id?: string;
+    product: string;
+
+    // ✅ Products that only have ONE material
+    validColors?: string[];
+    validSizes?: string[];
+    metersPerSize?: { [key: string]: number };
+    material?: string;
+
+    // ✅ Products with multiple materials (e.g., Pillowcases)
+    materials?: {
+        [key: string]: {
+            validColors?: string[]; // ✅ Optional to prevent errors
+            validSizes?: string[];
+            metersPerSize?: { [key: string]: number };
+        };
+    };
 }

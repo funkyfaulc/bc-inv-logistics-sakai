@@ -1,0 +1,169 @@
+[
+    {
+      "product": "Bed Sheets",
+      "validColors": [
+        "Black",
+        "Champagne",
+        "Charcoal Grey",
+        "Coastal Blue",
+        "Dune",
+        "Grey Mist",
+        "Ivory",
+        "Lilac",
+        "Marigold",
+        "Merlot",
+        "Mocha",
+        "Olive",
+        "Raisin",
+        "Sea Glass",
+        "Slate Blue",
+        "Twilight Blue",
+        "White"
+      ],
+      "validSizes": [
+        "Cal King",
+        "Full",
+        "King",
+        "Queen",
+        "Split King",
+        "Split Top King",
+        "Twin",
+        "TwinXL"
+      ]
+    },
+    {
+      "product": "Pillowcase",
+      "materials": {
+        "Bamboo": {
+          "validColors": [
+            "Black",
+            "Champagne",
+            "Charcoal Grey",
+            "Coastal Blue",
+            "Dune",
+            "Grey Mist",
+            "Ivory",
+            "Lilac",
+            "Marigold",
+            "Merlot",
+            "Mocha",
+            "Olive",
+            "Raisin",
+            "Sea Glass",
+            "Slate Blue",
+            "Twilight Blue",
+            "White"
+          ],
+          "validSizes": [
+            "King",
+            "Queen",
+            "Standard"
+          ]
+        },
+        "Silk": {
+          "validColors": [
+            "Champagne",
+            "Cobalt Blue",
+            "Dusty Rose",
+            "Ivory",
+            "Jet Black",
+            "Midnight Navy",
+            "Mocha",
+            "Rosy Brown",
+            "Sage Green",
+            "Silver",
+            "Slate Blue",
+            "White"
+          ],
+          "validSizes": [
+            "King",
+            "Queen",
+            "Standard"
+          ]
+        }
+      }
+    },
+    {
+      "product": "Flat Sheet",
+      "validColors": [
+        "Black",
+        "Champagne",
+        "Charcoal Grey",
+        "Coastal Blue",
+        "Dune",
+        "Grey Mist",
+        "Ivory",
+        "Sea Glass",
+        "Slate Blue",
+        "White"
+      ],
+      "validSizes": [
+        "Cal King",
+        "King",
+        "Queen"
+      ]
+    },
+    {
+      "product": "Fitted Sheet",
+      "validColors": [
+        "Black",
+        "Champagne",
+        "Charcoal Grey",
+        "Coastal Blue",
+        "Dune",
+        "Grey Mist",
+        "Ivory",
+        "Sea Glass",
+        "Slate Blue",
+        "White"
+      ],
+      "validSizes": [
+        "Cal King",
+        "King",
+        "Queen"
+      ]
+    },
+    {
+      "product": "Duvet Cover",
+      "validColors": [
+        "Black",
+        "Champagne",
+        "Charcoal Grey",
+        "Coastal Blue",
+        "Dune",
+        "Grey Mist",
+        "Ivory",
+        "Lilac",
+        "Marigold",
+        "Merlot",
+        "Mocha",
+        "Olive",
+        "Raisin",
+        "Sea Glass",
+        "Slate Blue",
+        "Twilight Blue",
+        "White"
+      ],
+      "validSizes": [
+        "Cal King",
+        "King",
+        "Queen"
+      ]
+    },
+    {
+      "product": "Crib Sheet",
+      "validColors": [
+        "Champagne",
+        "Coastal Blue",
+        "Dune",
+        "Grey Mist",
+        "Ivory",
+        "Sea Glass",
+        "White"
+      ],
+      "validSizes": [
+        "Crib"
+      ]
+    }
+  ]
+  

@@ -18,14 +18,14 @@ const db = admin.firestore();
 (async () => {
   try {
     // Load the product types JSON file
-    const jsonFilePath = path.resolve(__dirname, 'backup', 'productTypes.json');
+    const jsonFilePath = path.resolve(__dirname, '../backup', 'productTypes.json');
     const productTypes = JSON.parse(fs.readFileSync(jsonFilePath, 'utf8'));
 
     const batch = db.batch();
     productTypes.forEach((type: any) => {
       console.log(`Adding product type: ${type.product}`);
       const docRef = db.collection('product_types').doc(type.product);
-      batch.set(docRef, type);
+      batch.set(docRef, type, { merge: true }); // 🔥 Ensures no duplicate docs
     });
 
     await batch.commit();
