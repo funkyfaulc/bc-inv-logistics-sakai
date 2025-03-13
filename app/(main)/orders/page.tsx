@@ -352,6 +352,8 @@ const OrderManagement = () => {
                         header={header}
                         scrollable
                         scrollHeight="flex"
+                        sortField='orderDate'
+                        sortOrder={1}
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
 
