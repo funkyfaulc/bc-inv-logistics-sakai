@@ -62,7 +62,7 @@ const Reporting = () => {
 
 
         // Convert data to CSV format
-        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Material', 'Sales Velocity', 'FBA Stock', 'Inbound to FBA', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
+        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Material', 'Sales Velocity', 'FBA Stock', 'Inbound to FBA', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'AWD to FBA', 'Total Units'];
         const csvData = inventoryRecords.map(record => [
             record.asin,
             record.sku,
