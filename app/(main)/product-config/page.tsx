@@ -39,13 +39,16 @@ export default function ProductConfigPage() {
 
         await updateDoc(doc(db, "product_types", selectedConfig.id), JSON.parse(JSON.stringify(selectedConfig)));
 
-        // Close the modal after save
+        // ✅ Reset selectedConfig first to force a re-render
+        setSelectedConfig(null);
+
+        // ✅ Close modal AFTER state reset
         setIsDialogVisible(false);
 
-        // Refresh product types after saving
-        fetchProductTypes();
+        // ✅ Small delay before fetching to ensure Firestore has updated
+        setTimeout(fetchProductTypes, 300);
 
-        // Show success message
+        // ✅ Show success message
         toast.current?.show({ severity: "success", summary: "Saved", detail: "Product Type updated successfully", life: 3000 });
     };
 
@@ -127,7 +130,14 @@ export default function ProductConfigPage() {
                                 <Dropdown
                                     value={selectedMaterial}
                                     options={Object.keys(selectedConfig.materials)}
-                                    onChange={(e) => setSelectedMaterial(e.value)}
+                                    onChange={(e) => {
+                                        setSelectedMaterial(e.value); // Update selected material
+                                        setSelectedConfig(prev => ({
+                                            ...prev!,
+                                            validColors: prev!.materials![e.value]?.validColors || [],
+                                            validSizes: prev!.materials![e.value]?.validSizes || [],
+                                        }));
+                                    }}
                                     placeholder="Select Material"
                                 />
                             </>

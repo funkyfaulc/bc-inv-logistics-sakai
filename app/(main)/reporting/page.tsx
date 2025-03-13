@@ -62,7 +62,7 @@ const Reporting = () => {
 
 
         // Convert data to CSV format
-        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Material', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
+        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Material', 'Sales Velocity', 'FBA Stock', 'Inbound to FBA', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
         const csvData = inventoryRecords.map(record => [
             record.asin,
             record.sku,
@@ -72,9 +72,11 @@ const Reporting = () => {
             record.material ?? "Unknown Material",
             record.salesVelocity,
             record.fba,
+            record.inbound_to_fba,
             record.reserved_units,
             record.awd,
             record.inbound_to_awd,
+            record.awd_to_fba,
             record.totalUnits,
         ]);
 
@@ -164,9 +166,11 @@ const Reporting = () => {
 
                         <Column field="salesVelocity" header="Sales Velocity" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="fba" header="FBA Stock" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="inbound_to_fba" header="Inbound to FBA" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="reserved_units" header="FBA Reserved" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="awd" header="AWD Stock" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="inbound_to_awd" header="Inbound to AWD" sortable style={{ fontSize: '0.85em' }} />
+                        <Column field="awd_to_fba" header="AWD to FBA" sortable style={{ fontSize: '0.85em' }} />
                         <Column field="totalUnits" header="Total Units" sortable style={{ fontSize: '0.85em' }} />
                     </DataTable>
                 </div>

@@ -19,6 +19,7 @@ export interface InventoryRecord {
     inbound_received?: number; // Units received at FBA
     awd?: number; // Available units at AWD
     inbound_to_awd?: number; // Total inbound units to AWD
+    awd_to_fba?: number; // Units transferred from AWD to FBA
     snapshotDate: Date; // Date of the report snapshot
     createdAt: Date; // Record creation timestamp
     updatedAt: Date; // Last updated timestamp
