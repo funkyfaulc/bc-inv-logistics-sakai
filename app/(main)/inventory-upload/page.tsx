@@ -53,6 +53,7 @@ const InventoryUpload = () => {
 
     const toast = useRef<Toast>(null);
 
+    //03.11.25 confirmed column mappings
     const FBA_COLUMN_MAP = {
         asin: 3,
         sku: 1,
@@ -64,11 +65,14 @@ const InventoryUpload = () => {
         reserved_customer_order: 87,
     };
 
+
+    //03.11.25 confirmed column mappings
     const AWD_COLUMN_MAP = {
         asin: 3,
         sku: 1,
         inbound_to_awd: 4,
         awd: 6,
+        awd_to_fba: 14,
     };
 
     const SALES_VELOCITY_COLUMN_MAP = {
@@ -168,9 +172,11 @@ const InventoryUpload = () => {
                     salesVelocity: salesVelocityRecords.find(sv => sv.asin === item.asin)?.salesVelocity || 0,
                     fbaStock: item.fba || 0,
                     fbaReserved: item.reserved_units || 0,
+                    inboundtoFba: item.inbound_to_fba || 0,
                     awdStock: item.awd || 0,
                     inboundToAwd: item.inbound_to_awd || 0,
-                    totalUnits: (item.fba || 0) + (item.awd || 0),
+                    awdToFba: item.awd_to_fba || 0,
+                    totalUnits: (item.fba || 0) + (item.reserved_units || 0) + (item.inbound_to_fba || 0) + (item.awd || 0) + (item.inbound_to_awd || 0) + (item.awd_to_fba || 0),
                 };
             });
 
@@ -231,6 +237,7 @@ const InventoryUpload = () => {
                     reserved_customer_order: parseInteger(row[FBA_COLUMN_MAP.reserved_customer_order]),
                     awd: 0,
                     inbound_to_awd: 0,
+                    awd_to_fba: 0,
                     snapshotDate: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date(),
@@ -254,6 +261,7 @@ const InventoryUpload = () => {
                     reserved_units: 0,
                     awd: parseInteger(row[AWD_COLUMN_MAP.awd]),
                     inbound_to_awd: parseInteger(row[AWD_COLUMN_MAP.inbound_to_awd]),
+                    awd_to_fba: parseInteger(row[AWD_COLUMN_MAP.awd_to_fba]),
                     snapshotDate: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date(),
@@ -263,6 +271,7 @@ const InventoryUpload = () => {
                 const existingRecord = recordsMap.get(asin)!;
                 existingRecord.awd = parseInteger(row[AWD_COLUMN_MAP.awd], existingRecord.awd);
                 existingRecord.inbound_to_awd = parseInteger(row[AWD_COLUMN_MAP.inbound_to_awd], existingRecord.inbound_to_awd);
+                existingRecord.awd_to_fba = parseInteger(row[AWD_COLUMN_MAP.awd_to_fba], existingRecord.awd_to_fba);
             }
         }
 
@@ -290,7 +299,7 @@ const InventoryUpload = () => {
             return;
         }
 
-        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'Total Units'];
+        const headers = ['ASIN', 'SKU', 'Product Type', 'Size', 'Color', 'Sales Velocity', 'FBA Stock', 'FBA Reserved', 'AWD Stock', 'Inbound to AWD', 'AWD to FBA', 'Total Units'];
 
         const csvData = snapshot.records.map((record: any) => [
             record.asin || '',
@@ -301,8 +310,10 @@ const InventoryUpload = () => {
             record.salesVelocity || 0,
             record.fbaStock || 0,
             record.fbaReserved || 0,
+            record.inboundtoFba || 0,
             record.awdStock || 0,
             record.inboundToAwd || 0,
+            record.awdToFba || 0,
             record.totalUnits || 0,
         ]);
 
@@ -383,8 +394,10 @@ const InventoryUpload = () => {
                                     <Column field="salesVelocity" header="Sales Velocity" sortable />
                                     <Column field="fbaStock" header="FBA Stock" sortable />
                                     <Column field="fbaReserved" header="FBA Reserved" sortable />
+                                    <Column field="inboundtoFba" header="Inbound to FBA" sortable />
                                     <Column field="awdStock" header="AWD Stock" sortable />
                                     <Column field="inboundToAwd" header="Inbound to AWD" sortable />
+                                    <Column field="awdToFba" header="AWD to FBA" sortable />
                                     <Column field="totalUnits" header="Total Units" sortable />
                                 </DataTable>
                             </div>

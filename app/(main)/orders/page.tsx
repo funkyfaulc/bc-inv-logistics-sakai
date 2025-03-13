@@ -36,7 +36,7 @@ const OrderManagement = () => {
         contract: '',
         deposit: 0,
         totalCost: 0,
-        orderStatus: 'Processing', // ✅ Added default status
+        orderStatus: 'Planned', // ✅ Added default status
         shipments: []
     };
 
@@ -58,13 +58,13 @@ const OrderManagement = () => {
             console.log('📌 Fetching Orders from OrderService...');
             const data = await OrderService.getOrders();
             console.log('📦 Orders Retrieved:', data); // Log full order list
-    
+
             if (data.length === 0) {
                 console.warn('⚠️ No orders returned from Firestore. Check Firestore.');
             } else {
                 console.log('✅ Orders successfully retrieved. Updating state.');
             }
-    
+
             setOrders(data); // Ensure orders are actually set in state
         } catch (error) {
             console.error('❌ Error fetching orders:', error);
@@ -105,11 +105,11 @@ const OrderManagement = () => {
             _order[name] = handleShipmentField(val ?? null) as Order[typeof name];
         } else {
             if (name === "orderStatus") {
-                if (typeof val === "string" && ["Processing", "Shipping", "Arrived", "Completed"].includes(val)) {
+                if (typeof val === "string" && ["Planned", "Processing", "Shipping", "Arrived", "Completed"].includes(val)) {
                     _order[name] = val as Order["orderStatus"];
                 } else {
                     console.warn(`⚠️ Invalid orderStatus value: ${val}`);
-                    _order[name] = "Processing";  // Default to "Processing" if invalid
+                    _order[name] = "Planned";  // Default to "Processing" if invalid
                 }
             } else {
                 _order[name] = val as Order[typeof name];
@@ -350,7 +350,7 @@ const OrderManagement = () => {
                         globalFilter={globalFilter}
                         emptyMessage="No orders found."
                         header={header}
-                        scrollable 
+                        scrollable
                         scrollHeight="flex"
                     >
                         <Column selectionMode="multiple" headerStyle={{ width: '3rem' }}></Column>
@@ -359,21 +359,33 @@ const OrderManagement = () => {
                         <Column field="orderId" header="Order ID" sortable style ={{ width: '10%' }} body={(rowData) => rowData.orderId}></Column>
 
                         {/* Render Order Status */}
-                        <Column 
-                            field="orderStatus" 
-                            header="Status" 
+                        <Column
+                            field="orderStatus"
+                            header="Status"
                             sortable
-                            style = {{ width: '12%'}} 
+                            style = {{ width: '12%'}}
                             body={(rowData: Order) => {
-                                const statusColors: Record<Order["orderStatus"], "warning" | "info" | "success" | "danger"> = {
+                                // Only use valid Tag severities: "warning", "info", "success", "danger"
+                                const statusColors: {[key: string]: "warning" | "info" | "success" | "danger"} = {
+                                    Planned: "info",      // Use info for Planned
                                     Processing: "warning",
                                     Shipping: "info",
                                     Arrived: "success",
                                     Completed: "danger"
                                 };
 
-                                return <Tag value={rowData.orderStatus} severity={statusColors[rowData.orderStatus]} />;
-                            }} 
+                                // Add custom styling to distinguish Planned from Shipping (both use "info")
+                                const customStyle =
+                                    rowData.orderStatus === "Planned"
+                                        ? { backgroundColor: '#6366F1', color: 'white' } // Indigo color for Planned
+                                        : undefined;
+
+                                return <Tag
+                                    value={rowData.orderStatus}
+                                    severity={statusColors[rowData.orderStatus]}
+                                    style={customStyle}
+                                />;
+                            }}
                         />
 
                         {/* Render Dates */}
@@ -408,12 +420,13 @@ const OrderManagement = () => {
                             id="orderStatus"
                             value={order.orderStatus}
                             options={[
+                                { label: "Planned", value: "Planned" },
                                 { label: "Processing", value: "Processing" },
                                 { label: "Shipping", value: "Shipping" },
                                 { label: "Arrived", value: "Arrived" },
                                 { label: "Completed", value: "Completed" }
                             ]}
-                            onChange={(e) => onInputChange({ target: { value: e.value } }, 'orderStatus')}   
+                            onChange={(e) => onInputChange({ target: { value: e.value } }, 'orderStatus')}
                             placeholder="Select Status"
                         />
                         </div>

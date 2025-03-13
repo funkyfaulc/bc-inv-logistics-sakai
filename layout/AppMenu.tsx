@@ -41,14 +41,17 @@ const AppMenu = () => {
                     icon: 'pi pi-fw pi-database',
                     to: '/inventory-upload'
                 },
-
-
-
                 {
                     label: 'Order Production',
                     icon: 'pi pi-fw pi-cog',
                     to: '/inventory-production/'
-                }
+                },
+                {
+                    label: "Product Config",
+                    icon: "pi pi-cog",
+                    to: "/product-config"
+                },
+
             ]
         }
     ];

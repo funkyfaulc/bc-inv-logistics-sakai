@@ -66,11 +66,13 @@ export const InventoryRecordsService = {
                     reserved_units: fbaData.reserved_units ?? 0,
                     awd: awdData.awd ?? 0,
                     inbound_to_awd: awdData.inbound_to_awd ?? 0,
+                    awd_to_fba: awdData.awd_to_fba ?? 0,
                     totalUnits:
                         (fbaData.fba ?? 0) +
                         (fbaData.inbound_to_fba ?? 0) +
                         (awdData.awd ?? 0) +
                         (awdData.inbound_to_awd ?? 0) +
+                        (awdData.awd_to_fba ?? 0) +
                         (fbaData.reserved_units ?? 0),
                     reserved:
                         (fbaData.reserved_units ?? 0) +
@@ -247,6 +249,7 @@ export const InventoryRecordsService = {
                     sku: record.sku,
                     awd: record.awd ?? 0,
                     inbound_to_awd: record.inbound_to_awd ?? 0,
+                    awd_to_fba: record.awd_to_fba ?? 0,
                     snapshotDate: updatedFields.snapshotDate,
                     updatedAt: updatedFields.updatedAt,
                 }, { merge: true });
@@ -329,6 +332,7 @@ export const InventoryRecordsService = {
                     fbaReserved: record.reserved_units ?? 0,
                     awdStock: record.awd ?? 0,
                     inboundToAwd: record.inbound_to_awd ?? 0,
+                    awdToFba: record.awd_to_fba ?? 0,
                     totalUnits: record.totalUnits ?? 0,
                 })),
             };

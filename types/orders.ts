@@ -38,7 +38,7 @@ export interface Order {
     contract?: string;
     deposit?: number;
     totalCost?: number;
-    orderStatus: "Processing" | "Shipping" | "Arrived" | "Completed";
+    orderStatus: "Planned" | "Processing" | "Shipping" | "Arrived" | "Completed";
     shipments?: Shipment[]; // Shipments are associated with the order
 }
 
@@ -97,7 +97,7 @@ export interface OrderFirestore {
     contract: string;
     deposit: number;
     totalCost: number;
-    orderStatus: "Processing" | "Shipping" | "Arrived" | "Completed";
+    orderStatus: "Planned" | "Processing" | "Shipping" | "Arrived" | "Completed";
     created_at: Timestamp;
     updated_at: Timestamp;
     shipments: ShipmentFirestore[];

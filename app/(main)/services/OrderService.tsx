@@ -14,15 +14,21 @@ const orderCollection = collection(db, 'orders');
 
 // Updated `mapFirestoreOrderToOrder`
 const mapFirestoreOrderToOrder = (firestoreOrder: OrderFirestore, id: string): Order => {
-    
-    const determineStatus = (order: OrderFirestore): "Processing" | "Shipping" | "Arrived" | "Completed" => {
+
+    const determineStatus = (order: OrderFirestore): "Planned" | "Processing" | "Shipping" | "Arrived" | "Completed" => {
         if (order.orderStatus) return order.orderStatus; // ✅ Return the order status if it's already set
+
+        // For future orders (where orderDate is in the future), mark as Planned
+        if (order.orderDate && order.orderDate.toDate() > new Date()) {
+            return "Planned";
+        }
+
         if (order.availableInAmazonDate) return "Completed";
         if (order.deliveredToAmazonDate) return "Arrived";
         if (order.leavePortDate) return "Shipping";
         return "Processing";
     };
-    
+
     return {
         id,
         orderId: firestoreOrder.orderId,

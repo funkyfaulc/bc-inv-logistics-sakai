@@ -2,168 +2,115 @@
     {
       "product": "Bed Sheets",
       "validColors": [
-        "Black",
-        "Champagne",
-        "Charcoal Grey",
-        "Coastal Blue",
-        "Dune",
-        "Grey Mist",
-        "Ivory",
-        "Lilac",
-        "Marigold",
-        "Merlot",
-        "Mocha",
-        "Olive",
-        "Raisin",
-        "Sea Glass",
-        "Slate Blue",
-        "Twilight Blue",
-        "White"
+        "Black", "Champagne", "Charcoal Grey", "Coastal Blue", "Dune", "Grey Mist",
+        "Ivory", "Lilac", "Marigold", "Merlot", "Mocha", "Olive", "Raisin",
+        "Sea Glass", "Slate Blue", "Twilight Blue", "White"
       ],
       "validSizes": [
-        "Cal King",
-        "Full",
-        "King",
-        "Queen",
-        "Split King",
-        "Split Top King",
-        "Twin",
-        "TwinXL"
-      ]
+        "Cal King", "Full", "King", "Queen", "Split King", "Split Top King", "Twin", "TwinXL"
+      ],
+      "metersPerSize": {
+        "Cal King": 8,
+        "Full": 6.2,
+        "King": 7.78,
+        "Queen": 6.67,
+        "Split King": 9.09,
+        "Split Top King": 8.09,
+        "Twin": 4.9,
+        "TwinXL": 5.1
+      }
     },
     {
       "product": "Pillowcase",
       "materials": {
         "Bamboo": {
           "validColors": [
-            "Black",
-            "Champagne",
-            "Charcoal Grey",
-            "Coastal Blue",
-            "Dune",
-            "Grey Mist",
-            "Ivory",
-            "Lilac",
-            "Marigold",
-            "Merlot",
-            "Mocha",
-            "Olive",
-            "Raisin",
-            "Sea Glass",
-            "Slate Blue",
-            "Twilight Blue",
-            "White"
+            "Black", "Champagne", "Charcoal Grey", "Coastal Blue", "Dune", "Grey Mist",
+            "Ivory", "Lilac", "Marigold", "Merlot", "Mocha", "Olive", "Raisin",
+            "Sea Glass", "Slate Blue", "Twilight Blue", "White"
           ],
           "validSizes": [
-            "King",
-            "Queen",
-            "Standard"
-          ]
+            "King", "Queen", "Standard"
+          ],
+          "metersPerSize": {
+            "King": 0.98,
+            "Queen": 0.8,
+            "Standard": 0.72
+          }
         },
         "Silk": {
           "validColors": [
-            "Champagne",
-            "Cobalt Blue",
-            "Dusty Rose",
-            "Ivory",
-            "Jet Black",
-            "Midnight Navy",
-            "Mocha",
-            "Rosy Brown",
-            "Sage Green",
-            "Silver",
-            "Slate Blue",
-            "White"
+            "Champagne", "Cobalt Blue", "Dusty Rose", "Ivory", "Jet Black",
+            "Midnight Navy", "Mocha", "Rosy Brown", "Sage Green", "Silver",
+            "Slate Blue", "White"
           ],
           "validSizes": [
-            "King",
-            "Queen",
-            "Standard"
-          ]
+            "King", "Queen", "Standard"
+          ],
+          "metersPerSize": {
+            "King": 0.98,
+            "Queen": 0.8,
+            "Standard": 0.72
+          }
         }
       }
     },
     {
       "product": "Flat Sheet",
       "validColors": [
-        "Black",
-        "Champagne",
-        "Charcoal Grey",
-        "Coastal Blue",
-        "Dune",
-        "Grey Mist",
-        "Ivory",
-        "Sea Glass",
-        "Slate Blue",
-        "White"
+        "Black", "Champagne", "Charcoal Grey", "Coastal Blue", "Dune", "Grey Mist",
+        "Ivory", "Sea Glass", "Slate Blue", "White"
       ],
       "validSizes": [
-        "Cal King",
-        "King",
-        "Queen"
-      ]
+        "Cal King", "King", "Queen"
+      ],
+      "metersPerSize": {
+        "Cal King": 3.5,
+        "King": 3,
+        "Queen": 2.57
+      }
     },
     {
       "product": "Fitted Sheet",
       "validColors": [
-        "Black",
-        "Champagne",
-        "Charcoal Grey",
-        "Coastal Blue",
-        "Dune",
-        "Grey Mist",
-        "Ivory",
-        "Sea Glass",
-        "Slate Blue",
-        "White"
+        "Black", "Champagne", "Charcoal Grey", "Coastal Blue", "Dune", "Grey Mist",
+        "Ivory", "Sea Glass", "Slate Blue", "White"
       ],
       "validSizes": [
-        "Cal King",
-        "King",
-        "Queen"
-      ]
+        "Cal King", "King", "Queen"
+      ],
+      "metersPerSize": {
+        "Cal King": 3.5,
+        "King": 3.06,
+        "Queen": 2.6
+      }
     },
     {
       "product": "Duvet Cover",
       "validColors": [
-        "Black",
-        "Champagne",
-        "Charcoal Grey",
-        "Coastal Blue",
-        "Dune",
-        "Grey Mist",
-        "Ivory",
-        "Lilac",
-        "Marigold",
-        "Merlot",
-        "Mocha",
-        "Olive",
-        "Raisin",
-        "Sea Glass",
-        "Slate Blue",
-        "Twilight Blue",
-        "White"
+        "Black", "Champagne", "Charcoal Grey", "Coastal Blue", "Dune", "Grey Mist",
+        "Ivory", "Lilac", "Marigold", "Merlot", "Mocha", "Olive", "Raisin",
+        "Sea Glass", "Slate Blue", "Twilight Blue", "White"
       ],
       "validSizes": [
-        "Cal King",
-        "King",
-        "Queen"
-      ]
+        "Cal King", "King", "Queen"
+      ],
+      "metersPerSize": {
+        "Cal King": 7.76,
+        "King": 7.76,
+        "Queen": 6.6
+      }
     },
     {
       "product": "Crib Sheet",
       "validColors": [
-        "Champagne",
-        "Coastal Blue",
-        "Dune",
-        "Grey Mist",
-        "Ivory",
-        "Sea Glass",
-        "White"
+        "Champagne", "Coastal Blue", "Dune", "Grey Mist", "Ivory", "Sea Glass", "White"
       ],
       "validSizes": [
         "Crib"
-      ]
+      ],
+      "metersPerSize": {
+        "Crib": 1
+      }
     }
-  ]
-  
+]
